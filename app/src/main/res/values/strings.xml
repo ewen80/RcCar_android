@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MyCar</string>
+    <string name="button_Go">Go</string>
 </resources>
