@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
             return (int)(strength / 100.00 * 255);
         } else if(strength < 0){
             return 0;
-        } else if(strength > 100){
+        } else {
             return 255;
         }
     }
