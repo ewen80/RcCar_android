@@ -136,6 +136,34 @@ public class MainActivity extends AppCompatActivity {
             try {
                 int serverPort = Integer.parseInt(etxt_ServerPort.getText().toString());
 
+                int carAngle, carSpeed;
+                boolean turnLeft, forward;
+                if(angle > 0 && angle < 180){
+                    forward = true;
+                    carAngle = Math.abs(angle - 90);
+                    turnLeft = (angle - 90) > 0;
+                }else{
+                    forward = false;
+                    carAngle = Math.abs(angle - 270);
+                    turnLeft = (angle - 270) < 0;
+                }
+
+
+                carSpeed = this.strenthToSpeedTransform(strength);
+
+                if(forward){
+                    forward(carSpeed, dstAddr, serverPort);
+                }else{
+                    reverse(carSpeed, dstAddr, serverPort);
+                }
+
+                if(turnLeft){
+                    turnleft(carAngle, dstAddr, serverPort);
+                }else{
+                    turnright(carAngle, dstAddr, serverPort);
+                }
+
+
 
             }catch(NumberFormatException e){
                 Toast.makeText(MainActivity.this, "服务器端口号无法转换成数字", Toast.LENGTH_LONG).show();
@@ -143,16 +171,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (UnknownHostException e) {
             Toast.makeText(MainActivity.this, "无法识别服务器", Toast.LENGTH_LONG).show();
         }
-
-        int carAngle, carSpeed;
-        if(angle > 0 && angle < 180){
-            carAngle = Math.abs(angle - 90);
-        }else{
-            carAngle = Math.abs(angle - 270);
-        }
-
-        carSpeed = this.strenthToSpeedTransform(strength);
-
 
 
     }

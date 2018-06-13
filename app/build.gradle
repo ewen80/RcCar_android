@@ -4,7 +4,7 @@ android {
     compileSdkVersion 24
     defaultConfig {
         applicationId "pw.ewen.mycar"
-        minSdkVersion 23
+        minSdkVersion 24
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
@@ -30,5 +30,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
-    compile 'io.github.controlwear:virtualjoystick:1.9.2'
+    implementation 'io.github.controlwear:virtualjoystick:1.9.2'
 }
