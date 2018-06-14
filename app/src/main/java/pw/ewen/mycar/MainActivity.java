@@ -20,6 +20,7 @@ import io.github.controlwear.virtual.joystick.android.JoystickView;
 public class MainActivity extends AppCompatActivity {
 
     private static final int MIN_THROTTLE = 100; //最小油門
+    private static final int MAX_ANGLE = 50; //UI最大角度表示实际角度（angle=0或者180，对应实际舵机几度）
     private static final int THROTTLE_DEVIATION = 10;   //油門誤差
     private static final int DIRECTION_DEVIATION = 3;   //方向誤差
 
@@ -146,6 +147,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 从UI的操作角度到实际舵机角度的转换
+     * @param angle 相对角度即和90度（270度）的夹角
+     * @return  比例对应实际角度值
+     */
+    private int angleToDirectionTransform(int angle){
+        if(angle >=0 && angle <= 90){
+            return (angle * MAX_ANGLE) / 90;
+        }else{
+            return 0;
+        }
+    }
+
     private void process(int angle, int strength) {
         //避免頻繁調用該函數,间隔1秒才能再次调用
         if(lastProcessTime == 0){
@@ -172,11 +186,11 @@ public class MainActivity extends AppCompatActivity {
                 if(carSpeed > MIN_THROTTLE){
                     if(angle > 0 && angle < 180){
                         forward = true;
-                        carAngle = Math.abs(angle - 90);
+                        carAngle = angleToDirectionTransform(Math.abs(angle - 90));
                         turnLeft = (angle - 90) > 0;
                     }else{
                         forward = false;
-                        carAngle = Math.abs(angle - 270);
+                        carAngle = angleToDirectionTransform(Math.abs(angle - 270));
                         turnLeft = (angle - 270) < 0;
                     }
 
