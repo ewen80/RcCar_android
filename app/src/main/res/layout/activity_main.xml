@@ -28,7 +28,7 @@
 
     <EditText
         android:id="@+id/etxt_ServerIP"
-        android:layout_width="100dp"
+        android:layout_width="150dp"
         android:layout_height="36dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
@@ -39,7 +39,7 @@
 
     <EditText
         android:id="@+id/etxt_ServerPort"
-        android:layout_width="225dp"
+        android:layout_width="100dp"
         android:layout_height="36dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"

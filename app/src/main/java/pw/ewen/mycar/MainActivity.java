@@ -19,7 +19,16 @@ import io.github.controlwear.virtual.joystick.android.JoystickView;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int MIN_THROTTLE = 100; //最小油門
+    private static final int THROTTLE_DEVIATION = 10;   //油門誤差
+    private static final int DIRECTION_DEVIATION = 3;   //方向誤差
+
     DatagramSocket ds = null;
+
+    private long lastProcessTime = 0; //上次调用process函数的时间戳
+    private int lastAngle = 0; //上次的角度
+    private int lastSpeed = 0; //上次的速度
+
 
 
     private TextView etxt_ServerIP;
@@ -51,6 +60,14 @@ public class MainActivity extends AppCompatActivity {
         joystick.setOnMoveListener((angle, strength) -> {
             tv_angle.setText(String.valueOf(angle));
             tv_strength.setText(String.valueOf(strength));
+
+            //如果角度和速度在误差范围内则不会调用处理函数
+            if(Math.abs(angle - lastAngle) > DIRECTION_DEVIATION || Math.abs(strength - lastSpeed) > THROTTLE_DEVIATION){
+                lastAngle = angle;
+                lastSpeed = strength;
+                process(angle, strength);
+            }
+
         });
     }
 
@@ -117,19 +134,30 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //从虚拟摇杆的力度到速度的转换（0-100 到 0-255 的转换）
+    //从虚拟摇杆的力度到速度的转换（0-100 到 MIN_THROTTLE 到 255 的转换）
     private int strenthToSpeedTransform(int strength){
         //检查strength是否在0-100内
         if(strength >=0 && strength <= 100){
-            return (int)(strength / 100.00 * 255);
+            return ((100 - strength) * MIN_THROTTLE + 255 * strength) / 100;
         } else if(strength < 0){
-            return 0;
+            return MIN_THROTTLE;
         } else {
             return 255;
         }
     }
 
     private void process(int angle, int strength) {
+        //避免頻繁調用該函數,间隔1秒才能再次调用
+        if(lastProcessTime == 0){
+            lastProcessTime = System.currentTimeMillis();
+        }else{
+            if(System.currentTimeMillis() - lastProcessTime < 1000){
+                return;
+            }else{
+                lastProcessTime = System.currentTimeMillis();
+            }
+        }
+
         try {
             InetAddress dstAddr = InetAddress.getByName(etxt_ServerIP.getText().toString());
 
@@ -138,31 +166,34 @@ public class MainActivity extends AppCompatActivity {
 
                 int carAngle, carSpeed;
                 boolean turnLeft, forward;
-                if(angle > 0 && angle < 180){
-                    forward = true;
-                    carAngle = Math.abs(angle - 90);
-                    turnLeft = (angle - 90) > 0;
-                }else{
-                    forward = false;
-                    carAngle = Math.abs(angle - 270);
-                    turnLeft = (angle - 270) < 0;
-                }
-
 
                 carSpeed = this.strenthToSpeedTransform(strength);
 
-                if(forward){
-                    forward(carSpeed, dstAddr, serverPort);
-                }else{
-                    reverse(carSpeed, dstAddr, serverPort);
-                }
+                if(carSpeed > MIN_THROTTLE){
+                    if(angle > 0 && angle < 180){
+                        forward = true;
+                        carAngle = Math.abs(angle - 90);
+                        turnLeft = (angle - 90) > 0;
+                    }else{
+                        forward = false;
+                        carAngle = Math.abs(angle - 270);
+                        turnLeft = (angle - 270) < 0;
+                    }
 
-                if(turnLeft){
-                    turnleft(carAngle, dstAddr, serverPort);
-                }else{
-                    turnright(carAngle, dstAddr, serverPort);
-                }
+                    if(forward){
+                        forward(carSpeed, dstAddr, serverPort);
+                    }else{
+                        reverse(carSpeed, dstAddr, serverPort);
+                    }
 
+                    if(turnLeft){
+                        turnleft(carAngle, dstAddr, serverPort);
+                    }else{
+                        turnright(carAngle, dstAddr, serverPort);
+                    }
+                }else{
+                    stop(dstAddr, serverPort);
+                }
 
 
             }catch(NumberFormatException e){
