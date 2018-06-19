@@ -19,7 +19,7 @@ import io.github.controlwear.virtual.joystick.android.JoystickView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int MIN_THROTTLE = 100; //最小油門
+    private static final int MIN_THROTTLE = 80; //最小油門
     private static final int MAX_ANGLE = 50; //UI最大角度表示实际角度（angle=0或者180，对应实际舵机几度）
     private static final int THROTTLE_DEVIATION = 10;   //油門誤差
     private static final int DIRECTION_DEVIATION = 3;   //方向誤差
@@ -105,20 +105,13 @@ public class MainActivity extends AppCompatActivity {
             
 
             String recStr = new String(recDp.getData(), 0, recDp.getLength());
-            if(recStr.equals("here")){
-                return true;
-            } else {
-                return false;
-            }
 
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-            return false;
+            return recStr.equals("here");
+
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
-
     }
 
     //测试服务器是否存在
@@ -161,11 +154,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void process(int angle, int strength) {
-        //避免頻繁調用該函數,间隔1秒才能再次调用
+        //避免頻繁調用該函數,间隔0.5秒才能再次调用
         if(lastProcessTime == 0){
             lastProcessTime = System.currentTimeMillis();
         }else{
-            if(System.currentTimeMillis() - lastProcessTime < 1000){
+            if(System.currentTimeMillis() - lastProcessTime < 500){
                 return;
             }else{
                 lastProcessTime = System.currentTimeMillis();
