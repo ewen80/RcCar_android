@@ -31,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     private int lastSpeed = 0; //上次的速度
 
 
-
     private TextView etxt_ServerIP;
     private TextView etxt_ServerPort;
 
@@ -63,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
             tv_strength.setText(String.valueOf(strength));
 
             //如果角度和速度在误差范围内则不会调用处理函数
-            if(Math.abs(angle - lastAngle) > DIRECTION_DEVIATION || Math.abs(strength - lastSpeed) > THROTTLE_DEVIATION){
+            if(Math.abs(angle - lastAngle) > DIRECTION_DEVIATION || Math.abs(strength - lastSpeed) > THROTTLE_DEVIATION || strength == 0){
                 lastAngle = angle;
                 lastSpeed = strength;
                 process(angle, strength);
@@ -154,11 +153,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void process(int angle, int strength) {
-        //避免頻繁調用該函數,间隔0.5秒才能再次调用
+        //避免頻繁調用該函數,间隔0.5秒才能再次调用,如果是刹车则直接调用
         if(lastProcessTime == 0){
             lastProcessTime = System.currentTimeMillis();
         }else{
-            if(System.currentTimeMillis() - lastProcessTime < 500){
+            if(System.currentTimeMillis() - lastProcessTime < 500 && strength > 0){
                 return;
             }else{
                 lastProcessTime = System.currentTimeMillis();
@@ -176,6 +175,8 @@ public class MainActivity extends AppCompatActivity {
 
                 carSpeed = this.strenthToSpeedTransform(strength);
 
+                String commands = "";
+
                 if(carSpeed > MIN_THROTTLE){
                     if(angle > 0 && angle < 180){
                         forward = true;
@@ -188,19 +189,21 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     if(forward){
-                        forward(carSpeed, dstAddr, serverPort);
+                        commands += forward(carSpeed, dstAddr, serverPort, false);
                     }else{
-                        reverse(carSpeed, dstAddr, serverPort);
+                        commands += reverse(carSpeed, dstAddr, serverPort, false);
                     }
 
                     if(turnLeft){
-                        turnleft(carAngle, dstAddr, serverPort);
+                        commands += turnleft(carAngle, dstAddr, serverPort, false);
                     }else{
-                        turnright(carAngle, dstAddr, serverPort);
+                        commands += turnright(carAngle, dstAddr, serverPort,false);
                     }
                 }else{
-                    stop(dstAddr, serverPort);
+                    commands += stop(dstAddr, serverPort, false);
                 }
+
+                sendCommand(this.ds, commands, dstAddr, serverPort);
 
 
             }catch(NumberFormatException e){
@@ -224,32 +227,48 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //前进
-    private void forward(int speed, InetAddress addr, int port){
+    private String forward(int speed, InetAddress addr, int port, boolean sendNow){
         String command = "F" + String.valueOf(speed) + "|";
-        sendCommand(this.ds, command, addr, port);
+        if(sendNow){
+            sendCommand(this.ds, command, addr, port);
+        }
+        return command;
     }
 
     //后退
-    private void reverse(int speed, InetAddress addr, int port){
+    private String reverse(int speed, InetAddress addr, int port, boolean sendNow){
         String command = "B" + String.valueOf(speed) + "|";
-        sendCommand(this.ds, command, addr, port);
+        if(sendNow){
+            sendCommand(this.ds, command, addr, port);
+        }
+
+        return command;
     }
 
     //制动
-    private void stop(InetAddress addr, int port){
+    private String stop(InetAddress addr, int port, boolean sendNow){
         String command = "S0|";
-        sendCommand(this.ds, command, addr, port);
+        if(sendNow){
+            sendCommand(this.ds, command, addr, port);
+        }
+        return command;
     }
 
     //左转
-    private void turnleft(int degree, InetAddress addr, int port){
+    private String turnleft(int degree, InetAddress addr, int port, boolean sendNow){
         String command = "L" + String.valueOf(degree) + "|";
-        sendCommand(this.ds, command, addr, port);
+        if(sendNow){
+            sendCommand(this.ds, command, addr, port);
+        }
+        return command;
     }
 
     //右转
-    private void turnright(int degree, InetAddress addr, int port){
+    private String turnright(int degree, InetAddress addr, int port, boolean sendNow){
         String command = "R" + String.valueOf(degree) + "|";
-        sendCommand(this.ds, command, addr, port);
+        if(sendNow){
+            sendCommand(this.ds, command, addr, port);
+        }
+        return command;
     }
 }
