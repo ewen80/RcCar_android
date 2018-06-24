@@ -2,6 +2,7 @@ package pw.ewen.mycar;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -19,14 +20,17 @@ import io.github.controlwear.virtual.joystick.android.JoystickView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int MIN_THROTTLE = 80; //最小油門
+    private static final int MIN_THROTTLE = 100; //最小油門
+    private static final int MAX_THROTTLE = 180; //最大油门
+
     private static final int MAX_ANGLE = 50; //UI最大角度表示实际角度（angle=0或者180，对应实际舵机几度）
-    private static final int THROTTLE_DEVIATION = 10;   //油門誤差
-    private static final int DIRECTION_DEVIATION = 3;   //方向誤差
+    private static final int THROTTLE_DEVIATION = 10;   //控件strength誤差，还未经比例放大
+    private static final int DIRECTION_DEVIATION = 10;   //控件方向誤差，还未经比例放大
 
-    DatagramSocket ds = null;
+    DatagramSocket ds = null; //阻塞性socket
+    DatagramPacket ds_noblock = null;   //非阻塞性socket
 
-    private long lastProcessTime = 0; //上次调用process函数的时间戳
+//    private long lastProcessTime = 0; //上次调用process函数的时间戳
     private int lastAngle = 0; //上次的角度
     private int lastSpeed = 0; //上次的速度
 
@@ -57,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         JoystickView joystick = (JoystickView) findViewById(R.id.joystickView);
+        joystick.setEnabled(false);
         joystick.setOnMoveListener((angle, strength) -> {
             tv_angle.setText(String.valueOf(angle));
             tv_strength.setText(String.valueOf(strength));
@@ -97,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                     if(recDp.getAddress().equals(dstAddr)){
                         receivedResponse = true;
                     }
-                }catch (InterruptedIOException e){
+                }catch (IOException e){
                     trytimes++;
                 }
             }
@@ -105,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
             String recStr = new String(recDp.getData(), 0, recDp.getLength());
 
-            return recStr.equals("here");
+            return recStr.equals("next");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -122,20 +127,23 @@ public class MainActivity extends AppCompatActivity {
 
         if(serverPortInt != 0){
             boolean serverIsExist = testServer(serverIp, serverPortInt);
+
+            JoystickView joystick = (JoystickView) findViewById(R.id.joystickView);
+            joystick.setEnabled(serverIsExist);
             String testResultStr = serverIsExist ? "服务器存在" : "服务器不存在";
             Toast.makeText(MainActivity.this, testResultStr, Toast.LENGTH_SHORT).show();
         }
     }
 
-    //从虚拟摇杆的力度到速度的转换（0-100 到 MIN_THROTTLE 到 255 的转换）
+    //从虚拟摇杆的力度到速度的转换（0-100 到 MIN_THROTTLE 到 MAX_THROTTLE 的转换）
     private int strenthToSpeedTransform(int strength){
         //检查strength是否在0-100内
         if(strength >=0 && strength <= 100){
-            return ((100 - strength) * MIN_THROTTLE + 255 * strength) / 100;
+            return ((100 - strength) * MIN_THROTTLE + MAX_THROTTLE * strength) / 100;
         } else if(strength < 0){
             return MIN_THROTTLE;
         } else {
-            return 255;
+            return MAX_THROTTLE;
         }
     }
 
@@ -153,16 +161,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void process(int angle, int strength) {
-        //避免頻繁調用該函數,间隔0.5秒才能再次调用,如果是刹车则直接调用
-        if(lastProcessTime == 0){
-            lastProcessTime = System.currentTimeMillis();
-        }else{
-            if(System.currentTimeMillis() - lastProcessTime < 500 && strength > 0){
-                return;
-            }else{
-                lastProcessTime = System.currentTimeMillis();
-            }
-        }
+//        //避免頻繁調用該函數,间隔0.5秒才能再次调用,如果是刹车则直接调用
+//        if(lastProcessTime == 0){
+//            lastProcessTime = System.currentTimeMillis();
+//        }else{
+//            if(System.currentTimeMillis() - lastProcessTime < 500 && strength > 0){
+//                return;
+//            }else{
+//                lastProcessTime = System.currentTimeMillis();
+//            }
+//        }
 
         try {
             InetAddress dstAddr = InetAddress.getByName(etxt_ServerIP.getText().toString());
@@ -170,44 +178,53 @@ public class MainActivity extends AppCompatActivity {
             try {
                 int serverPort = Integer.parseInt(etxt_ServerPort.getText().toString());
 
-                int carAngle, carSpeed;
-                boolean turnLeft, forward;
+                //检测服务器端是否发送了允许发送指令的指令
+                byte[] recBuf = new byte[1024];
+                DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
 
-                carSpeed = this.strenthToSpeedTransform(strength);
+                ds.receive(recDp);
+                String recStr = new String(recDp.getData(), 0, recDp.getLength());
+                if(recStr.equals("next")){
+                    //如果收到指令则继续
+                    int carAngle, carSpeed;
+                    boolean turnLeft, forward;
 
-                String commands = "";
+                    carSpeed = this.strenthToSpeedTransform(strength);
 
-                if(carSpeed > MIN_THROTTLE){
-                    if(angle > 0 && angle < 180){
-                        forward = true;
-                        carAngle = angleToDirectionTransform(Math.abs(angle - 90));
-                        turnLeft = (angle - 90) > 0;
+                    String commands = "";
+
+                    if(carSpeed > MIN_THROTTLE){
+                        if(angle > 0 && angle < 180){
+                            forward = true;
+                            carAngle = angleToDirectionTransform(Math.abs(angle - 90));
+                            turnLeft = (angle - 90) > 0;
+                        }else{
+                            forward = false;
+                            carAngle = angleToDirectionTransform(Math.abs(angle - 270));
+                            turnLeft = (angle - 270) < 0;
+                        }
+
+                        if(forward){
+                            commands += forward(carSpeed, dstAddr, serverPort, false);
+                        }else{
+                            commands += reverse(carSpeed, dstAddr, serverPort, false);
+                        }
+
+                        if(turnLeft){
+                            commands += turnleft(carAngle, dstAddr, serverPort, false);
+                        }else{
+                            commands += turnright(carAngle, dstAddr, serverPort,false);
+                        }
                     }else{
-                        forward = false;
-                        carAngle = angleToDirectionTransform(Math.abs(angle - 270));
-                        turnLeft = (angle - 270) < 0;
+                        commands += stop(dstAddr, serverPort, false);
                     }
 
-                    if(forward){
-                        commands += forward(carSpeed, dstAddr, serverPort, false);
-                    }else{
-                        commands += reverse(carSpeed, dstAddr, serverPort, false);
-                    }
-
-                    if(turnLeft){
-                        commands += turnleft(carAngle, dstAddr, serverPort, false);
-                    }else{
-                        commands += turnright(carAngle, dstAddr, serverPort,false);
-                    }
-                }else{
-                    commands += stop(dstAddr, serverPort, false);
+                    sendCommand(this.ds, commands, dstAddr, serverPort);
                 }
-
-                sendCommand(this.ds, commands, dstAddr, serverPort);
-
-
-            }catch(NumberFormatException e){
+            } catch(NumberFormatException e){
                 Toast.makeText(MainActivity.this, "服务器端口号无法转换成数字", Toast.LENGTH_LONG).show();
+            } catch (IOException e) {
+                //接收服务器端指令时出错
             }
         } catch (UnknownHostException e) {
             Toast.makeText(MainActivity.this, "无法识别服务器", Toast.LENGTH_LONG).show();
