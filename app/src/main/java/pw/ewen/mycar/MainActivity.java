@@ -28,9 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int DIRECTION_DEVIATION = 10;   //控件方向誤差，还未经比例放大
 
     DatagramSocket ds = null; //阻塞性socket
-    DatagramPacket ds_noblock = null;   //非阻塞性socket
 
-//    private long lastProcessTime = 0; //上次调用process函数的时间戳
     private int lastAngle = 0; //上次的角度
     private int lastSpeed = 0; //上次的速度
 
@@ -76,47 +74,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
-    //测试服务器是否存在
-    public boolean testServer(String ip, int number) {
-        String testStr = "W0|";
-        try {
-            InetAddress dstAddr = InetAddress.getByName(ip);
-            DatagramPacket sendDp = new DatagramPacket(testStr.getBytes(), testStr.length(), dstAddr, number);
-
-            byte[] recBuf = new byte[1024];
-            DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
-            
-
-            //接收数据
-            ds.setSoTimeout(1000*5); //5秒超时
-            int trytimes = 0;
-            boolean receivedResponse = false;
-
-            //如果没有收到回应并且重试次数小于3次
-            while(!receivedResponse && trytimes < 3){
-                ds.send(sendDp);
-                try{
-                    ds.receive(recDp);
-                    //判断接收到的数据是否来自发送地址
-                    if(recDp.getAddress().equals(dstAddr)){
-                        receivedResponse = true;
-                    }
-                }catch (IOException e){
-                    trytimes++;
-                }
-            }
-            
-
-            String recStr = new String(recDp.getData(), 0, recDp.getLength());
-
-            return recStr.equals("next");
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
 
     //测试服务器是否存在
     public void testServer_OnClick(View view) {
