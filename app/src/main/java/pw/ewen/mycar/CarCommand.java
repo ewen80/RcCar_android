@@ -13,16 +13,10 @@ class CarCommand {
 
     private CarCommandEnum commandType;
     private CarMoveParam moveParam;
-    private CarServerAddress carAddress;
 
-    private DatagramSocket ds;
 
-    public CarCommand(CarCommandEnum commandType, CarServerAddress carAddress) throws SocketException {
+    public CarCommand(CarCommandEnum commandType) throws SocketException {
         this.commandType = commandType;
-        this.carAddress = carAddress;
-
-        ds = new DatagramSocket();
-        ds.setSoTimeout(1000*5); //5秒超时
     }
 
     public CarMoveParam getMoveParam() {
@@ -33,65 +27,39 @@ class CarCommand {
         this.moveParam = moveParam;
     }
 
-    public boolean execute(){
-        String commandsStr = "";
 
+    @Override
+    public String toString(){
         if(this.commandType != null){
             switch (commandType){
                 case Forward:
                     //前进
-                    commandsStr += getForwardCommandStr(false);
-                    break;
+                    return getForwardCommandStr();
                 case Reverse:
-                    commandsStr += getReverseCommandStr(false);
-                    break;
+                    //后退
+                    return getReverseCommandStr();
                 case TurnLeft:
-                    commandsStr += getTurnLeftCommandStr(false);
-                    break;
+                    //左传
+                    return getTurnLeftCommandStr();
                 case TurnRight:
-                    commandsStr += getTurnRightCommandStr(false);
-                case Find:
-                    //测试小车服务器端可否到达
-                    try {
-                        return findServer();
-                    } catch (IOException e) {
-                        return false;
-                    }
-                    break;
+                    //右转
+                    return getTurnRightCommandStr();
+                case Stop:
+                    //制动
+                    return getStopCommandStr();
+                default:
+                    return "";
             }
-            if(commandsStr.equals("")){
-                return sendCommand(commandsStr);
-            }
+
         } else {
-            return false;
+            return "";
         }
-    }
-
-    //发送命令
-    private boolean sendCommand(String commandStr){
-        DatagramPacket sendDp = null;
-        try {
-            sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), this.carAddress.getInetAddress(), this.carAddress.getPort());
-            try {
-                ds.send(sendDp);
-                return true;
-            } catch (IOException e) {
-                return false;
-            }
-        } catch (UnknownHostException e) {
-            return false;
-        }
-
     }
 
     //前进
-    private String getForwardCommandStr(boolean sendNow){
+    private String getForwardCommandStr(){
         if(this.moveParam != null){
-            String command = "F" + String.valueOf(this.moveParam.getSpeed()) + "|";
-            if(sendNow){
-                sendCommand(command);
-            }
-            return command;
+            return "F" + String.valueOf(this.moveParam.getSpeed()) + "|";
         } else {
             return "";
         }
@@ -99,13 +67,9 @@ class CarCommand {
     }
 
     //后退
-    private String getReverseCommandStr(boolean sendNow){
+    private String getReverseCommandStr(){
         if(this.moveParam != null){
-            String command = "B" + String.valueOf(this.moveParam.getSpeed()) + "|";
-            if(sendNow){
-                sendCommand(command);
-            }
-            return command;
+            return "B" + String.valueOf(this.moveParam.getSpeed()) + "|";
         } else{
             return "";
         }
@@ -113,22 +77,14 @@ class CarCommand {
     }
 
     //制动
-    private String getStopCommandStr(boolean sendNow){
-        String command = "S0|";
-        if(sendNow){
-            sendCommand(command);
-        }
-        return command;
+    private String getStopCommandStr(){
+        return "S0|";
     }
 
     //左转
-    private String getTurnLeftCommandStr(boolean sendNow){
+    private String getTurnLeftCommandStr(){
         if(this.moveParam != null){
-            String command = "L" + String.valueOf(this.moveParam.getAngle()) + "|";
-            if(sendNow){
-                sendCommand(command);
-            }
-            return command;
+            return "L" + String.valueOf(this.moveParam.getAngle()) + "|";
         } else{
             return "";
         }
@@ -136,48 +92,44 @@ class CarCommand {
     }
 
     //右转
-    private String getTurnRightCommandStr(boolean sendNow){
+    private String getTurnRightCommandStr(){
         if(this.moveParam != null){
-            String command = "R" + String.valueOf(this.moveParam.getAngle()) + "|";
-            if(sendNow){
-                sendCommand(command);
-            }
-            return command;
+            return "R" + String.valueOf(this.moveParam.getAngle()) + "|";
         } else{
             return "";
         }
     }
 
     //测试服务器是否存在
-    private boolean findServer() throws IOException {
-        String commandStr = "W0|";
-
-        InetAddress dstAddr = this.carAddress.getInetAddress();
-        DatagramPacket sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), dstAddr, this.carAddress.getPort());
-
-        byte[] recBuf = new byte[1024];
-        DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
-
-        //接收数据,重试3次
-        int trytimes = 3;
-        boolean receivedResponse = false;
-
-        //如果没有收到回应并且重试次数小于3次
-        while (!receivedResponse && trytimes > 0) {
-            ds.send(sendDp);
-            try {
-                ds.receive(recDp);
-                //判断接收到的数据是否来自发送地址
-                if (recDp.getAddress().equals(dstAddr)) {
-                    receivedResponse = true;
-                }
-            } catch (IOException e) {
-                trytimes--;
-            }
-        }
-
-        String recStr = new String(recDp.getData(), 0, recDp.getLength());
-
-        return recStr.equals("next");
-    }
+//    private boolean findServer() throws IOException {
+////        String commandStr = "W0|";
+////
+////        InetAddress dstAddr = this.carAddress.getInetAddress();
+////        DatagramPacket sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), dstAddr, this.carAddress.getPort());
+////
+////        byte[] recBuf = new byte[1024];
+////        DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
+////
+////        //接收数据,重试3次
+////        int trytimes = 3;
+////        boolean receivedResponse = false;
+////
+////        //如果没有收到回应并且重试次数小于3次
+////        while (!receivedResponse && trytimes > 0) {
+////            ds.send(sendDp);
+////            try {
+////                ds.receive(recDp);
+////                //判断接收到的数据是否来自发送地址
+////                if (recDp.getAddress().equals(dstAddr)) {
+////                    receivedResponse = true;
+////                }
+////            } catch (IOException e) {
+////                trytimes--;
+////            }
+////        }
+////
+////        String recStr = new String(recDp.getData(), 0, recDp.getLength());
+////
+////        return recStr.equals("next");
+////    }
 }
