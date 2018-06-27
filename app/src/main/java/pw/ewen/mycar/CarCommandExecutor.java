@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.LinkedList;
 
 /**
@@ -12,13 +11,13 @@ import java.util.LinkedList;
  */
 public class CarCommandExecutor {
 
-    private LinkedList<CarCommand> commands = new LinkedList<>();
+    private CarCommand throttleCommand, directionCommand, otherCommand;
     private DatagramSocket ds;
     private CarServerAddress carAddress;
 
     public CarCommandExecutor(CarServerAddress carAddress) throws SocketException {
         ds = new DatagramSocket();
-        ds.setSoTimeout(1000*5); //5秒超时
+        ds.setSoTimeout(1000); //1秒超时
 
         this.carAddress = carAddress;
     }
@@ -31,12 +30,34 @@ public class CarCommandExecutor {
         this.carAddress = carAddress;
     }
 
-    public LinkedList<CarCommand> getCommands() {
-        return commands;
+    public boolean addThrottleCommand(CarCommand command){
+        CarCommandTypeEnum ccte = command.getCommandType();
+        if(ccte == CarCommandTypeEnum.Forward || ccte == CarCommandTypeEnum.Reverse){
+            this.throttleCommand = command;
+            return true;
+        } else{
+            return false;
+        }
     }
 
-    public void pushCommand(CarCommand command){
-        this.commands.offer(command);
+    public boolean addDirectionCommand(CarCommand command){
+        CarCommandTypeEnum ccte = command.getCommandType();
+        if(ccte == CarCommandTypeEnum.TurnLeft || ccte == CarCommandTypeEnum.TurnRight){
+            this.directionCommand = command;
+            return true;
+        } else{
+            return false;
+        }
+    }
+
+    public boolean addOtherCommand(CarCommand command){
+        CarCommandTypeEnum ccte = command.getCommandType();
+        if(ccte != CarCommandTypeEnum.Forward && ccte != CarCommandTypeEnum.Reverse && ccte != CarCommandTypeEnum.TurnLeft && ccte != CarCommandTypeEnum.TurnRight){
+            this.otherCommand = command;
+            return true;
+        } else{
+            return false;
+        }
     }
 
     //发送队列中的所有命令
@@ -44,13 +65,16 @@ public class CarCommandExecutor {
         DatagramPacket sendDp = null;
         StringBuilder commandStrs = new StringBuilder();
 
-        CarCommand command;
-        do{
-            command = commands.poll();
-            if(command != null){
-                commandStrs.append(command.toString());
-            }
-        } while(command != null);
+        if(this.throttleCommand != null){
+            commandStrs.append(this.throttleCommand.toString());
+        }
+        if(this.directionCommand != null){
+            commandStrs.append(this.directionCommand.toString());
+        }
+        if(this.otherCommand != null){
+            commandStrs.append(this.otherCommand.toString());
+        }
+
         if(commandStrs.length() > 0){
             sendDp = new DatagramPacket(commandStrs.toString().getBytes(), commandStrs.toString().length(), this.carAddress.getInetAddress(), this.carAddress.getPort());
             ds.send(sendDp);

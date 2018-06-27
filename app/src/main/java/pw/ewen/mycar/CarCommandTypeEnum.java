@@ -1,5 +1,5 @@
 package pw.ewen.mycar;
 
-public enum CarCommandEnum {
+public enum CarCommandTypeEnum {
     Forward, Reverse, TurnLeft, TurnRight, Stop, Find
 }

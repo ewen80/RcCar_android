@@ -1,21 +1,22 @@
 package pw.ewen.mycar;
 
-import android.widget.Toast;
-
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
 class CarCommand {
 
-    private CarCommandEnum commandType;
+    private CarCommandTypeEnum commandType;
     private CarMoveParam moveParam;
 
 
-    public CarCommand(CarCommandEnum commandType) throws SocketException {
+    public CarCommand(CarCommandTypeEnum commandType) throws SocketException {
+        this.commandType = commandType;
+    }
+
+    public CarCommandTypeEnum getCommandType() {
+        return commandType;
+    }
+
+    public void setCommandType(CarCommandTypeEnum commandType) {
         this.commandType = commandType;
     }
 
