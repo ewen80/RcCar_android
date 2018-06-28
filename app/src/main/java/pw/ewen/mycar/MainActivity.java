@@ -18,10 +18,6 @@ import io.github.controlwear.virtual.joystick.android.JoystickView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int MIN_THROTTLE = 100; //最小油門
-    private static final int MAX_THROTTLE = 180; //最大油门
-
-    private static final int MAX_ANGLE = 50; //UI最大角度表示实际角度（angle=0或者180，对应实际舵机几度）
     private static final int THROTTLE_DEVIATION = 10;   //控件strength誤差，还未经比例放大
     private static final int DIRECTION_DEVIATION = 10;   //控件方向誤差，还未经比例放大
 
@@ -50,6 +46,35 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             ds = new DatagramSocket();
+            String serverIP = etxt_ServerIP.getText().toString();
+            int port = Integer.parseInt(etxt_ServerIP.getText().toString());
+
+            CarServerAddress carAddress = new CarServerAddress(serverIP, port);
+
+            CarCommandExecutor carCommandExecutor = CarCommandExecutor.getInstance();
+
+            //启动一个线程发送命令
+            Thread sendThread = new Thread(()->{
+                //检测服务器端是否发送了允许发送指令的指令
+                byte[] recBuf = new byte[1024];
+                DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
+
+                try {
+                    ds.receive(recDp);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                String recStr = new String(recDp.getData(), 0, recDp.getLength());
+                if(recStr.equals("next")){
+                    try {
+                        carCommandExecutor.sendCommands(ds, carAddress);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            sendThread.start();
 
 
         } catch (SocketException e) {
@@ -68,9 +93,10 @@ public class MainActivity extends AppCompatActivity {
                 lastSpeed = strength;
                 process(angle, strength);
             }
-
         });
     }
+
+
 
 
     //测试服务器是否存在
@@ -90,32 +116,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //从虚拟摇杆的力度到速度的转换（0-100 到 MIN_THROTTLE 到 MAX_THROTTLE 的转换）
-    private int strenthToSpeedTransform(int strength){
-        //检查strength是否在0-100内
-        if(strength >=0 && strength <= 100){
-            return ((100 - strength) * MIN_THROTTLE + MAX_THROTTLE * strength) / 100;
-        } else if(strength < 0){
-            return MIN_THROTTLE;
-        } else {
-            return MAX_THROTTLE;
-        }
-    }
 
-    /**
-     * 从UI的操作角度到实际舵机角度的转换
-     * @param angle 相对角度即和90度（270度）的夹角
-     * @return  比例对应实际角度值
-     */
-    private int angleToDirectionTransform(int angle){
-        if(angle >=0 && angle <= 90){
-            return (angle * MAX_ANGLE) / 90;
-        }else{
-            return 0;
-        }
-    }
 
-    private void process(int angle, int strength) {
+    //写入命令
+    private void addCommand(int angle, int strength) {
 //        //避免頻繁調用該函數,间隔0.5秒才能再次调用,如果是刹车则直接调用
 //        if(lastProcessTime == 0){
 //            lastProcessTime = System.currentTimeMillis();
@@ -126,6 +130,16 @@ public class MainActivity extends AppCompatActivity {
 //                lastProcessTime = System.currentTimeMillis();
 //            }
 //        }
+
+        CarCommand carCommand;
+
+        int carAngle, carSpeed;
+        boolean turnLeft, forward;
+
+        //新代码编写处
+        carCommand
+
+
 
         try {
             InetAddress dstAddr = InetAddress.getByName(etxt_ServerIP.getText().toString());
@@ -148,9 +162,9 @@ public class MainActivity extends AppCompatActivity {
 
                     String commands = "";
 
-                    if(carSpeed > MIN_THROTTLE){
+                    if(carSpeed > CarCommand.MIN_THROTTLE){
                         if(angle > 0 && angle < 180){
-                            forward = true;
+                            carCommand = new CarCommand(CarCommandTypeEnum.Drive);
                             carAngle = angleToDirectionTransform(Math.abs(angle - 90));
                             turnLeft = (angle - 90) > 0;
                         }else{
@@ -186,61 +200,5 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-    }
-
-    //发送命令
-    private void sendCommand(DatagramSocket ds, String command, InetAddress addr, int port){
-        DatagramPacket sendDp = new DatagramPacket(command.getBytes(), command.length(), addr, port);
-        try {
-            ds.send(sendDp);
-        } catch (IOException e) {
-            Toast.makeText(MainActivity.this, "无法发送数据", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    //前进
-    private String forward(int speed, InetAddress addr, int port, boolean sendNow){
-        String command = "F" + String.valueOf(speed) + "|";
-        if(sendNow){
-            sendCommand(this.ds, command, addr, port);
-        }
-        return command;
-    }
-
-    //后退
-    private String reverse(int speed, InetAddress addr, int port, boolean sendNow){
-        String command = "B" + String.valueOf(speed) + "|";
-        if(sendNow){
-            sendCommand(this.ds, command, addr, port);
-        }
-
-        return command;
-    }
-
-    //制动
-    private String stop(InetAddress addr, int port, boolean sendNow){
-        String command = "S0|";
-        if(sendNow){
-            sendCommand(this.ds, command, addr, port);
-        }
-        return command;
-    }
-
-    //左转
-    private String turnleft(int degree, InetAddress addr, int port, boolean sendNow){
-        String command = "L" + String.valueOf(degree) + "|";
-        if(sendNow){
-            sendCommand(this.ds, command, addr, port);
-        }
-        return command;
-    }
-
-    //右转
-    private String turnright(int degree, InetAddress addr, int port, boolean sendNow){
-        String command = "R" + String.valueOf(degree) + "|";
-        if(sendNow){
-            sendCommand(this.ds, command, addr, port);
-        }
-        return command;
     }
 }

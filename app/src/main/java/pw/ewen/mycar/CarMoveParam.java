@@ -3,6 +3,10 @@ package pw.ewen.mycar;
 /**
  * 小车移动参数类
  * 方向和速度
+ * 角度：
+ *             90
+ *       180         0
+ *             270
  */
 class CarMoveParam {
 

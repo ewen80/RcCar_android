@@ -14,7 +14,7 @@ public class CarServerAddress {
     }
 
     public InetAddress getInetAddress() throws UnknownHostException {
-        InetAddress dstAddr = InetAddress.getByName(ip);
+        return InetAddress.getByName(ip);
     }
 
     public String getIp() {
