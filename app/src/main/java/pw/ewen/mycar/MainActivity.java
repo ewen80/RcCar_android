@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv_angle;
     private TextView tv_strength;
 
+    CarCommandExecutor carCommandExecutor = CarCommandExecutor.getInstance();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,8 +52,6 @@ public class MainActivity extends AppCompatActivity {
             int port = Integer.parseInt(etxt_ServerIP.getText().toString());
 
             CarServerAddress carAddress = new CarServerAddress(serverIP, port);
-
-            CarCommandExecutor carCommandExecutor = CarCommandExecutor.getInstance();
 
             //启动一个线程发送命令
             Thread sendThread = new Thread(()->{
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
             if(Math.abs(angle - lastAngle) > DIRECTION_DEVIATION || Math.abs(strength - lastSpeed) > THROTTLE_DEVIATION || strength == 0){
                 lastAngle = angle;
                 lastSpeed = strength;
-                process(angle, strength);
+                addCommand(angle, strength);
             }
         });
     }
@@ -102,8 +102,9 @@ public class MainActivity extends AppCompatActivity {
     //测试服务器是否存在
     public void testServer_OnClick(View view) {
 
-        String serverIp = ((EditText)findViewById(R.id.etxt_ServerIP)).getText().toString();
-        String serverPortStr = ((EditText)findViewById(R.id.etxt_ServerPort)).getText().toString();
+        String serverIp = etxt_ServerIP.getText().toString();
+        String serverPortStr = etxt_ServerPort.getText().toString();
+
         int serverPortInt = Integer.parseInt(serverPortStr);
 
         if(serverPortInt != 0){
@@ -120,85 +121,9 @@ public class MainActivity extends AppCompatActivity {
 
     //写入命令
     private void addCommand(int angle, int strength) {
-//        //避免頻繁調用該函數,间隔0.5秒才能再次调用,如果是刹车则直接调用
-//        if(lastProcessTime == 0){
-//            lastProcessTime = System.currentTimeMillis();
-//        }else{
-//            if(System.currentTimeMillis() - lastProcessTime < 500 && strength > 0){
-//                return;
-//            }else{
-//                lastProcessTime = System.currentTimeMillis();
-//            }
-//        }
-
-        CarCommand carCommand;
-
-        int carAngle, carSpeed;
-        boolean turnLeft, forward;
-
-        //新代码编写处
-        carCommand
-
-
-
-        try {
-            InetAddress dstAddr = InetAddress.getByName(etxt_ServerIP.getText().toString());
-
-            try {
-                int serverPort = Integer.parseInt(etxt_ServerPort.getText().toString());
-
-                //检测服务器端是否发送了允许发送指令的指令
-                byte[] recBuf = new byte[1024];
-                DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
-
-                ds.receive(recDp);
-                String recStr = new String(recDp.getData(), 0, recDp.getLength());
-                if(recStr.equals("next")){
-                    //如果收到指令则继续
-                    int carAngle, carSpeed;
-                    boolean turnLeft, forward;
-
-                    carSpeed = this.strenthToSpeedTransform(strength);
-
-                    String commands = "";
-
-                    if(carSpeed > CarCommand.MIN_THROTTLE){
-                        if(angle > 0 && angle < 180){
-                            carCommand = new CarCommand(CarCommandTypeEnum.Drive);
-                            carAngle = angleToDirectionTransform(Math.abs(angle - 90));
-                            turnLeft = (angle - 90) > 0;
-                        }else{
-                            forward = false;
-                            carAngle = angleToDirectionTransform(Math.abs(angle - 270));
-                            turnLeft = (angle - 270) < 0;
-                        }
-
-                        if(forward){
-                            commands += forward(carSpeed, dstAddr, serverPort, false);
-                        }else{
-                            commands += reverse(carSpeed, dstAddr, serverPort, false);
-                        }
-
-                        if(turnLeft){
-                            commands += turnleft(carAngle, dstAddr, serverPort, false);
-                        }else{
-                            commands += turnright(carAngle, dstAddr, serverPort,false);
-                        }
-                    }else{
-                        commands += stop(dstAddr, serverPort, false);
-                    }
-
-                    sendCommand(this.ds, commands, dstAddr, serverPort);
-                }
-            } catch(NumberFormatException e){
-                Toast.makeText(MainActivity.this, "服务器端口号无法转换成数字", Toast.LENGTH_LONG).show();
-            } catch (IOException e) {
-                //接收服务器端指令时出错
-            }
-        } catch (UnknownHostException e) {
-            Toast.makeText(MainActivity.this, "无法识别服务器", Toast.LENGTH_LONG).show();
-        }
-
-
+        CarCommand carCommand = new CarCommand();
+        CarMoveParam carMoveParam = new CarMoveParam(strength, angle);
+        carCommand.setMoveParam(carMoveParam);
+        carCommandExecutor.addCommand(carCommand);
     }
 }

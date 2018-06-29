@@ -34,11 +34,15 @@ public class CarCommandExecutor {
 
     //发送队列中的所有命令
     public void sendCommands(DatagramSocket ds, CarServerAddress carAddress) throws IOException {
-        DatagramPacket sendDp = null;
-        StringBuilder commandStrs = new StringBuilder();
-
         if(this.command != null){
-            commandStrs.append(this.command.toString());
+            String commandStr = this.command.toString();
+            DatagramPacket sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), carAddress.getInetAddress(), carAddress.getPort());
+            ds.send(sendDp);
         }
+    }
+
+    //发送需要返回值的命令
+    public String sendCallbackCommand(DatagramSocket ds, CarServerAddress carAddress) throws IOException {
+        sendCommands(ds, carAddress);
     }
 }

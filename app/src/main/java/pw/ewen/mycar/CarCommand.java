@@ -7,14 +7,13 @@ class CarCommand {
     public static final int MIN_THROTTLE = 100; //最小油門
     public static final int MAX_THROTTLE = 180; //最大油门
 
-    private static final int MAX_ANGLE = 50; //UI最大角度表示实际角度（angle=0或者180，对应实际舵机几度）
+    public static final int MAX_ANGLE = 50; //UI最大角度表示实际角度（angle=0或者180，对应实际舵机几度）
 
-    private CarCommandTypeEnum commandType;
+    private CarCommandTypeEnum commandType = CarCommandTypeEnum.Other;
     private CarMoveParam moveParam;
 
 
-    public CarCommand(CarCommandTypeEnum commandType) throws SocketException {
-        this.commandType = commandType;
+    public CarCommand() {
     }
 
     public CarCommandTypeEnum getCommandType() {
@@ -31,6 +30,11 @@ class CarCommand {
 
     public void setMoveParam(CarMoveParam moveParam) {
         this.moveParam = moveParam;
+        if(moveParam.getSpeed() > 0){
+            this.commandType = CarCommandTypeEnum.Drive;
+        } else{
+            this.commandType = CarCommandTypeEnum.Stop;
+        }
     }
 
     //从虚拟摇杆的力度到速度的转换（0-100 到 MIN_THROTTLE 到 MAX_THROTTLE 的转换）
@@ -87,7 +91,6 @@ class CarCommand {
 
         if(angle > 0 && angle <= 90){
             //直行右转
-
             throttleCommand = "F" + String.valueOf(tranformedSpeed) + "|";
             directionCommand = "L" + String.valueOf(angleToDirectionTransform(90 - angle)) + "|";
         } else if(angle > 90 && angle <= 180){
@@ -113,35 +116,35 @@ class CarCommand {
 
 
     //测试服务器是否存在
-//    private boolean findServer() throws IOException {
-////        String commandStr = "W0|";
-////
-////        InetAddress dstAddr = this.carAddress.getInetAddress();
-////        DatagramPacket sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), dstAddr, this.carAddress.getPort());
-////
-////        byte[] recBuf = new byte[1024];
-////        DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
-////
-////        //接收数据,重试3次
-////        int trytimes = 3;
-////        boolean receivedResponse = false;
-////
-////        //如果没有收到回应并且重试次数小于3次
-////        while (!receivedResponse && trytimes > 0) {
-////            ds.send(sendDp);
-////            try {
-////                ds.receive(recDp);
-////                //判断接收到的数据是否来自发送地址
-////                if (recDp.getAddress().equals(dstAddr)) {
-////                    receivedResponse = true;
-////                }
-////            } catch (IOException e) {
-////                trytimes--;
-////            }
-////        }
-////
-////        String recStr = new String(recDp.getData(), 0, recDp.getLength());
-////
-////        return recStr.equals("next");
-////    }
+    private boolean findServer() throws IOException {
+        String commandStr = "W0|";
+
+        InetAddress dstAddr = this.carAddress.getInetAddress();
+        DatagramPacket sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), dstAddr, this.carAddress.getPort());
+
+        byte[] recBuf = new byte[1024];
+        DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
+
+        //接收数据,重试3次
+        int trytimes = 3;
+        boolean receivedResponse = false;
+
+        //如果没有收到回应并且重试次数小于3次
+        while (!receivedResponse && trytimes > 0) {
+            ds.send(sendDp);
+            try {
+                ds.receive(recDp);
+                //判断接收到的数据是否来自发送地址
+                if (recDp.getAddress().equals(dstAddr)) {
+                    receivedResponse = true;
+                }
+            } catch (IOException e) {
+                trytimes--;
+            }
+        }
+
+        String recStr = new String(recDp.getData(), 0, recDp.getLength());
+
+        return recStr.equals("next");
+    }
 }
