@@ -42,7 +42,29 @@ public class CarCommandExecutor {
     }
 
     //发送需要返回值的命令
-    public String sendCallbackCommand(DatagramSocket ds, CarServerAddress carAddress) throws IOException {
-        sendCommands(ds, carAddress);
+    public String sendCallbackCommand(DatagramSocket ds, CarServerAddress carAddress, CarCommand command, int trytimes) throws IOException {
+
+        byte[] recBuf = new byte[1024];
+        DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
+
+        boolean receivedResponse = false;
+
+        while (!receivedResponse && trytimes > 0) {
+            if(command != null) {
+                ds.send(new DatagramPacket(command.toString().getBytes(), command.toString().length(), carAddress.getInetAddress(), carAddress.getPort()));
+                try {
+                    ds.receive(recDp);
+                    //判断接收到的数据是否来自发送地址
+                    if (recDp.getAddress().equals(carAddress.getInetAddress())) {
+                        receivedResponse = true;
+                    }
+                } catch (IOException e) {
+                    trytimes--;
+                }
+            }
+
+        }
+
+        return new String(recDp.getData(), 0, recDp.getLength());
     }
 }

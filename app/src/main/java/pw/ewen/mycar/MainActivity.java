@@ -1,5 +1,6 @@
 package pw.ewen.mycar;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -21,7 +22,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int THROTTLE_DEVIATION = 10;   //控件strength誤差，还未经比例放大
     private static final int DIRECTION_DEVIATION = 10;   //控件方向誤差，还未经比例放大
 
-    DatagramSocket ds = null; //阻塞性socket
+    private DatagramSocket ds = null; //阻塞性socket
+    private CarServerAddress carAddress = null;
 
     private int lastAngle = 0; //上次的角度
     private int lastSpeed = 0; //上次的速度
@@ -34,6 +36,34 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv_strength;
 
     CarCommandExecutor carCommandExecutor = CarCommandExecutor.getInstance();
+
+    private class ConfirmServerTask extends AsyncTask<Void, Void, Boolean> {
+
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            if(ds != null && carAddress != null) {
+                try {
+                    CarCommand findCommand = new CarCommand();
+                    findCommand.setCommandType(CarCommandTypeEnum.Find);
+
+                    String result = carCommandExecutor.sendCallbackCommand(ds, carAddress,findCommand, 3);
+                    return result.equals("here");
+                } catch (IOException e) {
+                    return false;
+                }
+            } else{
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            JoystickView joystick = (JoystickView) findViewById(R.id.joystickView);
+            joystick.setEnabled(result);
+            String testResultStr = result ? "服务器存在" : "服务器不存在";
+            Toast.makeText(MainActivity.this, testResultStr, Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
             String serverIP = etxt_ServerIP.getText().toString();
             int port = Integer.parseInt(etxt_ServerIP.getText().toString());
 
-            CarServerAddress carAddress = new CarServerAddress(serverIP, port);
+            carAddress = new CarServerAddress(serverIP, port);
 
             //启动一个线程发送命令
             Thread sendThread = new Thread(()->{
@@ -102,19 +132,7 @@ public class MainActivity extends AppCompatActivity {
     //测试服务器是否存在
     public void testServer_OnClick(View view) {
 
-        String serverIp = etxt_ServerIP.getText().toString();
-        String serverPortStr = etxt_ServerPort.getText().toString();
-
-        int serverPortInt = Integer.parseInt(serverPortStr);
-
-        if(serverPortInt != 0){
-            boolean serverIsExist = testServer(serverIp, serverPortInt);
-
-            JoystickView joystick = (JoystickView) findViewById(R.id.joystickView);
-            joystick.setEnabled(serverIsExist);
-            String testResultStr = serverIsExist ? "服务器存在" : "服务器不存在";
-            Toast.makeText(MainActivity.this, testResultStr, Toast.LENGTH_SHORT).show();
-        }
+        new ConfirmServerTask().execute();
     }
 
 

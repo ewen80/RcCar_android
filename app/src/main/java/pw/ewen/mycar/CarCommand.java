@@ -73,6 +73,9 @@ class CarCommand {
                 case Stop:
                     //制动
                     return getStopCommandStr();
+                case Find:
+                    //确认服务器
+                    return getFindCommandSTr();
                 default:
                     return "";
             }
@@ -114,37 +117,9 @@ class CarCommand {
         return "S0|";
     }
 
-
-    //测试服务器是否存在
-    private boolean findServer() throws IOException {
-        String commandStr = "W0|";
-
-        InetAddress dstAddr = this.carAddress.getInetAddress();
-        DatagramPacket sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), dstAddr, this.carAddress.getPort());
-
-        byte[] recBuf = new byte[1024];
-        DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
-
-        //接收数据,重试3次
-        int trytimes = 3;
-        boolean receivedResponse = false;
-
-        //如果没有收到回应并且重试次数小于3次
-        while (!receivedResponse && trytimes > 0) {
-            ds.send(sendDp);
-            try {
-                ds.receive(recDp);
-                //判断接收到的数据是否来自发送地址
-                if (recDp.getAddress().equals(dstAddr)) {
-                    receivedResponse = true;
-                }
-            } catch (IOException e) {
-                trytimes--;
-            }
-        }
-
-        String recStr = new String(recDp.getData(), 0, recDp.getLength());
-
-        return recStr.equals("next");
+    //确认服务器
+    private String getFindCommandSTr(){
+        return "W0|";
     }
+
 }
