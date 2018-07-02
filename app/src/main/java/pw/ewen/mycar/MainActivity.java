@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private DatagramSocket ds = null; //阻塞性socket
     private CarServerAddress carAddress = null;
 
-    private boolean serverConnected = false; //当前是否连接了服务器
+    private volatile boolean stopSendCommand = false; //中断指令发送
 
     private int lastAngle = 0; //上次的角度
     private int lastSpeed = 0; //上次的速度
@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
         protected Boolean doInBackground(Void... voids) {
 
             String serverIP = etxt_ServerIP.getText().toString();
-            int port = Integer.parseInt(etxt_ServerIP.getText().toString());
+            int port = Integer.parseInt(etxt_ServerPort.getText().toString());
 
             carAddress = new CarServerAddress(serverIP, port);
 
@@ -55,7 +55,9 @@ public class MainActivity extends AppCompatActivity {
                     CarCommand findCommand = new CarCommand();
                     findCommand.setCommandType(CarCommandTypeEnum.Find);
 
+                    stopSendCommand = true;
                     String result = carCommandExecutor.sendCallbackCommand(ds, carAddress,findCommand, 3);
+                    stopSendCommand = false;
                     return result.equals("here");
                 } catch (IOException e) {
                     return false;
@@ -87,27 +89,31 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             ds = new DatagramSocket();
+            ds.setSoTimeout(2000);
 
             //启动一个线程发送命令
             Thread sendThread = new Thread(()->{
                 while(true){
-                    //检测服务器端是否发送了允许发送指令的指令
-                    byte[] recBuf = new byte[1024];
-                    DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
+                    if(!stopSendCommand){
+                        //检测服务器端是否发送了允许发送指令的指令
+                        byte[] recBuf = new byte[1024];
+                        DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
 
-                    try {
-                        ds.receive(recDp);
-                    } catch (IOException e) {
-                        continue;
-                    }
-                    String recStr = new String(recDp.getData(), 0, recDp.getLength());
-                    if(recStr.equals("next") && carAddress != null){
                         try {
-                            carCommandExecutor.sendCommands(ds, carAddress);
+                            ds.receive(recDp);
                         } catch (IOException e) {
                             continue;
                         }
+                        String recStr = new String(recDp.getData(), 0, recDp.getLength());
+                        if(recStr.equals("next") && carAddress != null){
+                            try {
+                                carCommandExecutor.sendCommands(ds, carAddress);
+                            } catch (IOException e) {
+                                continue;
+                            }
+                        }
                     }
+
                 }
 
             });
