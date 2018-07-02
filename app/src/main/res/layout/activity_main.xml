@@ -54,7 +54,7 @@
         android:layout_height="40dp"
         android:layout_marginStart="2dp"
         android:layout_marginTop="8dp"
-        android:onClick="testServer_OnClick"
+        android:onClick="connectServer_OnClick"
         android:text="连接"
         app:layout_constraintStart_toEndOf="@+id/etxt_ServerPort"
         app:layout_constraintTop_toTopOf="parent" />
