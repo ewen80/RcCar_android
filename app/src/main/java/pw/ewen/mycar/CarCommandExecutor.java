@@ -14,7 +14,7 @@ public class CarCommandExecutor {
 
     private static final CarCommandExecutor instance = new CarCommandExecutor();
 
-    private CarCommand  command;
+    private volatile CarCommand  command;
 
     private CarCommandExecutor() {
     }

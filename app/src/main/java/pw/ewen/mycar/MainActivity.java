@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv_angle;
     private TextView tv_strength;
 
-    CarCommandExecutor carCommandExecutor = CarCommandExecutor.getInstance();
+    CarCommandExecutor  carCommandExecutor = CarCommandExecutor.getInstance();
 
 
     private class ConfirmServerTask extends AsyncTask<Void, Void, Boolean> {
