@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 
 /**
@@ -33,11 +34,12 @@ public class CarCommandExecutor {
     }
 
     //发送队列中的所有命令
-    public void sendCommands(DatagramSocket ds, CarServerAddress carAddress) throws IOException {
+    public void sendCommand(DatagramSocket ds, CarServerAddress carAddress) throws IOException {
         if(this.command != null){
             String commandStr = this.command.toString();
             DatagramPacket sendDp = new DatagramPacket(commandStr.getBytes(), commandStr.length(), carAddress.getInetAddress(), carAddress.getPort());
             ds.send(sendDp);
+            this.command = null;
         }
     }
 
@@ -48,6 +50,16 @@ public class CarCommandExecutor {
         DatagramPacket recDp = new DatagramPacket(recBuf, recBuf.length);
 
         boolean receivedResponse = false;
+
+        ds.send(new DatagramPacket("N0|".getBytes(), "N0|".length(), carAddress.getInetAddress(), carAddress.getPort()));
+        while(true){
+            try{
+                ds.receive(recDp);
+            } catch(SocketTimeoutException e){
+                //一旦服务器端停止发送next信息，则发送正式指令，否则等待
+                break;
+            }
+        }
 
         while (!receivedResponse && trytimes > 0) {
             if(command != null) {
@@ -64,6 +76,8 @@ public class CarCommandExecutor {
             }
 
         }
+
+        ds.send(new DatagramPacket("N1|".getBytes(), "N1|".length(), carAddress.getInetAddress(), carAddress.getPort()));
 
         return new String(recDp.getData(), 0, recDp.getLength());
     }

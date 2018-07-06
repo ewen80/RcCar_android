@@ -4,16 +4,13 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
 import io.github.controlwear.virtual.joystick.android.JoystickView;
 
@@ -36,6 +33,9 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tv_angle;
     private TextView tv_strength;
+
+    private CarCommand carCommand = new CarCommand();
+    private CarMoveParam carMoveParam = new CarMoveParam();
 
     CarCommandExecutor  carCommandExecutor = CarCommandExecutor.getInstance();
 
@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                         String recStr = new String(recDp.getData(), 0, recDp.getLength());
                         if(recStr.equals("next") && carAddress != null){
                             try {
-                                carCommandExecutor.sendCommands(ds, carAddress);
+                                carCommandExecutor.sendCommand(ds, carAddress);
                             } catch (IOException e) {
                                 continue;
                             }
@@ -134,9 +134,11 @@ public class MainActivity extends AppCompatActivity {
 
             //如果角度和速度在误差范围内则不会调用处理函数
             if(Math.abs(angle - lastAngle) > DIRECTION_DEVIATION || Math.abs(strength - lastSpeed) > THROTTLE_DEVIATION || strength == 0){
-                lastAngle = angle;
-                lastSpeed = strength;
-                addCommand(angle, strength);
+                if((strength == 0 && lastSpeed != 0) || strength != 0) {
+                    lastAngle = angle;
+                    lastSpeed = strength;
+                    addCommand(angle, strength);
+                }
             }
         });
     }
@@ -154,8 +156,8 @@ public class MainActivity extends AppCompatActivity {
 
     //写入命令
     private void addCommand(int angle, int strength) {
-        CarCommand carCommand = new CarCommand();
-        CarMoveParam carMoveParam = new CarMoveParam(strength, angle);
+        this.carMoveParam.setAngle(angle);
+        this.carMoveParam.setSpeed(strength);
         carCommand.setMoveParam(carMoveParam);
         carCommandExecutor.addCommand(carCommand);
     }

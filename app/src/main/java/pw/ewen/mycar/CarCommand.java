@@ -95,7 +95,7 @@ class CarCommand {
         if(angle > 0 && angle <= 90){
             //直行右转
             throttleCommand = "F" + String.valueOf(tranformedSpeed) + "|";
-            directionCommand = "L" + String.valueOf(angleToDirectionTransform(90 - angle)) + "|";
+            directionCommand = "R" + String.valueOf(angleToDirectionTransform(90 - angle)) + "|";
         } else if(angle > 90 && angle <= 180){
             //直行左转
             throttleCommand = "F" + String.valueOf(tranformedSpeed) + "|";
@@ -107,7 +107,7 @@ class CarCommand {
         } else if(angle > 270 && angle <= 360){
             //后退右转
             throttleCommand = "B" + String.valueOf(tranformedSpeed) + "|";
-            directionCommand = "L" + String.valueOf(angleToDirectionTransform(angle - 270)) + "|";
+            directionCommand = "R" + String.valueOf(angleToDirectionTransform(angle - 270)) + "|";
         }
         return  throttleCommand + directionCommand;
     }
