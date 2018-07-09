@@ -5,7 +5,7 @@ import java.net.SocketException;
 class CarCommand {
 
     public static final int MIN_THROTTLE = 100; //最小油門
-    public static final int MAX_THROTTLE = 180; //最大油门
+    public static final int MAX_THROTTLE = 230; //最大油门
 
     public static final int MAX_ANGLE = 50; //UI最大角度表示实际角度（angle=0或者180，对应实际舵机几度）
 
