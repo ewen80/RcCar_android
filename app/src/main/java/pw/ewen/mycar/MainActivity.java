@@ -1,5 +1,6 @@
 package pw.ewen.mycar;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -150,6 +151,12 @@ public class MainActivity extends AppCompatActivity {
     public void connectServer_OnClick(View view) {
 
         new ConfirmServerTask().execute();
+    }
+
+    //播放视频点击按钮
+    public void playVideoButton_OnClick(View view) {
+        Intent playVideoIntent = new Intent(this, VideoActivity.class);
+        startActivity(playVideoIntent);
     }
 
 

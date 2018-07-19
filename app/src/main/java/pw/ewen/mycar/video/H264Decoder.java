@@ -1,5 +1,7 @@
 package pw.ewen.mycar.video;
 
+import android.util.Log;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,17 +60,28 @@ public class H264Decoder {
         }
     }
 
-    private void fillBuffer() throws Exception {
+    private void fillBuffer(BufferedInputStream bis) throws Exception {
         //lastProcessPoint以后的数据移到缓冲区最前端
         if(endNaluPos > 0) {
+            //缓冲区内有完整nalu
             int i = 0;
             while(endNaluPos < PROCESS_BUFFER_SIZE) {
                 processBuffer[i] = processBuffer[endNaluPos + i];
                 i++;
             }
             bis.read(processBuffer, endNaluPos, PROCESS_BUFFER_SIZE - endNaluPos + 1);
-        } else {
-            throw new Exception("缓冲区内没有完整NALU，请尝试扩大缓冲区长度。");
+        } else if(beginNaluPos > 0) {
+            //缓冲区内只找到nalu开始代码,没有找到结束代码,将开始代码之后的全部前移,后面补充
+            int j = 0;
+            for(int i = beginNaluPos; i < processBuffer.length; i++) {
+                processBuffer[j++] = processBuffer[i];
+            }
+            bis.read(processBuffer, PROCESS_BUFFER_SIZE - beginNaluPos, beginNaluPos);
+        } else if(beginNaluPos == -1 && endNaluPos == -1) {
+            //整体填充缓冲区
+            bis.read(processBuffer, 0, PROCESS_BUFFER_SIZE );
+        } else if(beginNaluPos == 0 && endNaluPos == -1) {
+            throw new Exception("缓冲区内无法容纳完整nalu,请尝试扩大缓冲区.");
         }
     }
 
@@ -111,6 +124,33 @@ public class H264Decoder {
             }
         }
         return null;
+    }
+
+    //对单个nalu送进解码器解码
+    private void naluDecode(Nalu nalu) {
+        Log.i("Decode", "找到1个nalu:" + nalu.toString());
+    }
+
+
+    public  void decode() throws Exception {
+        if(!this.readingFile) {
+            readFile();
+        }
+        //初始化缓冲区
+        fillBuffer(this.bis);
+
+        for(int i = 0; i < processBuffer.length; i++) {
+            Nalu nalu = findOneNalu(this.processBuffer, i);
+            if(nalu != null) {
+                //找到一个nalu
+                naluDecode(nalu);
+            } else {
+                //没有找到nalu,继续寻找
+                continue;
+            }
+        }
+
+
     }
 
 }

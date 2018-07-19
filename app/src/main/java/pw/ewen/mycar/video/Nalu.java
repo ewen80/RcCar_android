@@ -1,5 +1,7 @@
 package pw.ewen.mycar.video;
 
+import java.util.Arrays;
+
 /*
     H264的一个Nalu即网络传输的基本单位以0x00000001 或者 0x000001开头
  */
@@ -27,5 +29,11 @@ public class Nalu {
         this.type = type;
     }
 
-
+    @Override
+    public String toString() {
+        return "Nalu{" +
+                "type=" + type +
+                ", byteContent=" + Arrays.toString(byteContent) +
+                '}';
+    }
 }
