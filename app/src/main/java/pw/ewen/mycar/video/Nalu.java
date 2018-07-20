@@ -31,9 +31,13 @@ public class Nalu {
 
     @Override
     public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < byteContent.length; i++) {
+            sb.append(String.format("%02X ", byteContent[i]));
+        }
         return "Nalu{" +
                 "type=" + type +
-                ", byteContent=" + Arrays.toString(byteContent) +
+                ", byteContent=" + sb.toString() +
                 '}';
     }
 }

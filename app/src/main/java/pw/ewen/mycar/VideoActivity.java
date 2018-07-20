@@ -79,6 +79,7 @@ public class VideoActivity extends AppCompatActivity {
             try {
                 decoder.decode();
             } catch (Exception e) {
+                e.printStackTrace();
                 Log.e("DecoderError", e.toString());
             }
         }
