@@ -1,5 +1,5 @@
 package pw.ewen.mycar.video;
 
 public enum NaluType {
-    SPS,PPS,Other
+    SPS,PPS,STOP,Other
 }

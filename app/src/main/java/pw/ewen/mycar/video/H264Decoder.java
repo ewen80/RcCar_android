@@ -1,12 +1,16 @@
 package pw.ewen.mycar.video;
 
+import android.media.MediaCodec;
+import android.media.MediaFormat;
 import android.util.Log;
+import android.view.SurfaceView;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /*
     负责解码H264裸流
@@ -21,12 +25,26 @@ public class H264Decoder {
     }
 
     public static H264Decoder getInstance() {
-
         return LazyHolder.INSTANCE;
     }
 
+    private MediaCodec mCodec;
+    private int naluCount = 0;
+
+    public SurfaceView getSurfaceView() {
+        return surfaceView;
+    }
+
+    private SurfaceView surfaceView;
+
+    private final static String MIME_TYPE = "video/avc"; // H.264 Advanced Video
+    private int videoWidth = 640;
+    private int videoHeight = 480;
+    private int fps = 15;
+
+
     //H264文件缓存区，解码器工作缓存，要能够容纳一个nalu的容量，否则解码器会出错
-    private final static int PROCESS_BUFFER_SIZE = 4096;
+    private final static int PROCESS_BUFFER_SIZE = 200000;
     private int beginNaluPos = -1;
     //缓存区最后一个起始码的位置
     private int endNaluPos = -1;
@@ -35,8 +53,12 @@ public class H264Decoder {
     private BufferedInputStream bis;
     private boolean readingFile = false;
 
-
     private String decodeFile;
+
+    private byte[] sps = null;
+    private byte[] pps = null;
+
+    private boolean codecIsInitialed = false;
 
     public Nalu getCurrentNalu() {
         return currentNalu;
@@ -46,8 +68,51 @@ public class H264Decoder {
         return decodeFile;
     }
 
+    public int getVideoWidth() {
+        return videoWidth;
+    }
+
+    public void setVideoWidth(int videoWidth) {
+        this.videoWidth = videoWidth;
+    }
+
+    public int getVideoHeight() {
+        return videoHeight;
+    }
+
+    public void setVideoHeight(int videoHeight) {
+        this.videoHeight = videoHeight;
+    }
+
+    public int getFps() {
+        return fps;
+    }
+
+    public void setFps(int fps) {
+        this.fps = fps;
+    }
+
     public void setDecodeFile(String decodeFile) {
         this.decodeFile = decodeFile;
+    }
+
+    public void initDecoder(byte[] sps, byte[] pps) throws IOException {
+
+        mCodec = MediaCodec.createDecoderByType(MIME_TYPE);
+        MediaFormat mediaFormat = MediaFormat.createVideoFormat(MIME_TYPE,
+                videoWidth, videoHeight);
+
+        if(sps != null) {
+            mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
+        }
+
+        if(pps != null) {
+            mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
+        }
+
+        mCodec.configure(mediaFormat, this.surfaceView.getHolder().getSurface(),
+                null, 0);
+        mCodec.start();
     }
 
     private void readFile() throws FileNotFoundException {
@@ -117,14 +182,16 @@ public class H264Decoder {
 
     //返回是否成功找到nalu
     private Nalu findOneNalu(byte[] buffer, int beginPos) {
-        Log.i("Decoder", "寻找NALU: beginPos"+String.valueOf(beginPos));
+        this.beginNaluPos = this.endNaluPos = -1;
 
-        for(int i = beginPos; i < buffer.length; i++) {
-            int isStartCode = checkNaluStartCode(buffer, i);
+        int isStartCode = -1;
+        int j = 0;
+
+        for(int i = beginPos; i< buffer.length; i++) {
+            isStartCode = checkNaluStartCode(buffer, i);
             if(isStartCode > 0) {
                 this.beginNaluPos = i;
 
-                int j;
                 switch (isStartCode) {
                     case 1:
                         j = i + 4;
@@ -136,60 +203,142 @@ public class H264Decoder {
                         j = -1;
                         break;
                 }
+                break;
+            }
+        }
 
-                while(j < buffer.length) {
-                    if(checkNaluStartCode(buffer, j) > 0) {
-                        this.endNaluPos = j - 1;
+        if(isStartCode > 0) {
+            while(j < buffer.length) {
+                if(checkNaluStartCode(buffer, j) > 0) {
+                    this.endNaluPos = j - 1;
 
-                        Log.i("Decoder", "找到NALU");
-                        Nalu nalu = new Nalu();
-                        byte[] naluContent = new byte[endNaluPos - i + 1];
-                         System.arraycopy(buffer, beginNaluPos, naluContent, 0, naluContent.length);
-                        nalu.setByteContent(naluContent);
+//                    Log.i("Decoder", "找到NALU");
+                    Nalu nalu = new Nalu();
+                    byte[] naluContent = new byte[endNaluPos - beginNaluPos + 1];
+                    System.arraycopy(buffer, beginNaluPos, naluContent, 0, naluContent.length);
+                    nalu.setByteContent(naluContent);
+                    //判断nalu类型
+                    NaluType naluType = checkNaluType(nalu);
+                    if(naluType != null) {
+                        nalu.setType(naluType);
                         return nalu;
                     }
-                    j++;
                 }
+                j++;
+            }
+        }
 
+
+
+        return null;
+    }
+
+    private NaluType checkNaluType(Nalu nalu) {
+        byte[] content = nalu.getByteContent();
+        for(int i = 1; i < content.length; i++) {
+            if(content[i - 1] == 1) {
+                int unitType = content[i] & 0x1F;
+                switch (unitType) {
+                    case 7:
+                        return NaluType.PPS;
+                    case 8:
+                        return NaluType.SPS;
+                    case 11:
+                        return NaluType.STOP;
+                    default:
+                        return NaluType.Other;
+                }
             }
         }
         return null;
     }
 
     //对单个nalu送进解码器解码
-    private void naluDecode(Nalu nalu) {
-        Log.i("Decoder", "找到1个nalu:" + nalu.toString());
+    private void naluDecode(Nalu nalu) throws IOException {
+//        Log.i("Decoder", "nalu:" + nalu.toString());
+
+        int inputBufferIndex = mCodec.dequeueInputBuffer(-1);
+
+        if (inputBufferIndex >= 0) {
+            ByteBuffer inputBuffer = mCodec.getInputBuffer(inputBufferIndex);
+            if(inputBuffer != null) {
+                inputBuffer.clear();
+                inputBuffer.put(nalu.getByteContent());
+                mCodec.queueInputBuffer(inputBufferIndex, 0, nalu.getByteContent().length, this.naluCount * 1000000 /this.fps, 0);
+            }
+
+            // Get output buffer index
+            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+            int outputBufferIndex = mCodec.dequeueOutputBuffer(bufferInfo, 200);
+            while (outputBufferIndex >= 0) {
+                mCodec.releaseOutputBuffer(outputBufferIndex, true);
+                outputBufferIndex = mCodec.dequeueOutputBuffer(bufferInfo, 200);
+            }
+        }
+        naluCount++;
+
+
     }
 
 
-    public  void decode() throws Exception {
-        if(!this.readingFile) {
-            Log.i("Decoder", "开始读取文件");
-            readFile();
-            this.readingFile = true;
-        }
+    public  void decode(SurfaceView surfaceView) throws Exception {
+        try {
+            this.surfaceView = surfaceView;
 
-        //填充缓冲区
-        while(fillBuffer(this.bis) != -1) {
-            this.beginNaluPos = this.endNaluPos = -1;
-            for(int i = 0; i < processBuffer.length; i++) {
-                Nalu nalu = findOneNalu(this.processBuffer, i);
-                if(nalu != null) {
-                    //找到一个nalu
-                    naluDecode(nalu);
+            if(!this.readingFile) {
+                Log.i("Decoder", "开始读取文件");
+                readFile();
+                this.readingFile = true;
+            }
 
-                    if(this.endNaluPos != processBuffer.length - 1) {
-                        i = this.endNaluPos + 1;
+            //填充缓冲区
+            while(fillBuffer(this.bis) != -1) {
+
+                int i = 0;
+                while(i < processBuffer.length) {
+                    Nalu nalu = findOneNalu(this.processBuffer, i);
+                    if(nalu != null) {
+                        //找到一个nalu
+                        Log.i("Decoder", "beginNaluPos:"+this.beginNaluPos+",endNaluPos:"+this.endNaluPos);
+                        //等待sps和pps信息后再初始化解码器
+                        NaluType naluType = nalu.getType();
+                        if(sps == null && naluType.equals(NaluType.SPS)) {
+                            sps = nalu.getNoStartCodeContent();
+                        }
+                        if(pps == null && naluType.equals(NaluType.PPS)) {
+                            pps = nalu.getNoStartCodeContent();
+                        }
+
+                        if(sps != null && pps != null) {
+                            if(!codecIsInitialed) {
+                                initDecoder(sps, pps);
+                                codecIsInitialed = true;
+                            }
+
+                            naluDecode(nalu);
+                        }
+
+                        if(this.endNaluPos != processBuffer.length - 1) {
+                            i = this.endNaluPos + 1;
+                        }
+//                        Log.i("Decoder", "下一个查询位:" + String.valueOf(i));
+                    } else if(this.beginNaluPos != -1) {
+                        break;
+                    } else {
+                        i++;
                     }
                 }
             }
+            this.mCodec.stop();
+            this.mCodec.release();
+        } finally {
+            if(this.readingFile) {
+                closeFile();
+                this.readingFile = false;
+                Log.i("Decoder", "文件读取完毕");
+            }
         }
 
-        if(this.readingFile) {
-            closeFile();
-            this.readingFile = false;
-            Log.i("Decoder", "文件读取完毕");
-        }
     }
 
 }

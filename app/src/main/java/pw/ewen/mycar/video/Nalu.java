@@ -29,6 +29,18 @@ public class Nalu {
         this.type = type;
     }
 
+    //获取去除开始码的内容
+    public byte[] getNoStartCodeContent() {
+        for(int i = 1; i < byteContent.length; i++) {
+            if(byteContent[i - 1] == 1) {
+                byte[] retBytes = new byte[byteContent.length - i];
+                System.arraycopy(byteContent, i, retBytes, 0, retBytes.length);
+                return retBytes;
+            }
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

@@ -9,6 +9,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Button;
 import android.widget.Toast;
@@ -40,14 +41,30 @@ public class VideoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video);
 
-        sv1 = (SurfaceView) findViewById(R.id.sv1);
+        sv1 = findViewById(R.id.sv1);
+        sv1.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                if(ContextCompat.checkSelfPermission(VideoActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(VideoActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+                } else {
+                    play();
+                }
+            }
 
-        if(ContextCompat.checkSelfPermission(VideoActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(VideoActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-        } else {
-            play();
-        }
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+
+            }
+        });
+
+
     }
 
     @Override
@@ -77,7 +94,7 @@ public class VideoActivity extends AppCompatActivity {
         public void run() {
             decoder.setDecodeFile(h264Path);
             try {
-                decoder.decode();
+                decoder.decode(sv1);
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e("DecoderError", e.toString());
