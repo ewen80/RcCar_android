@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Boolean result) {
-            JoystickView joystick = (JoystickView) findViewById(R.id.joystickView);
+            JoystickView joystick = findViewById(R.id.joystickView);
             joystick.setEnabled(result);
             String testResultStr = result ? "服务器存在" : "服务器不存在";
             Toast.makeText(MainActivity.this, testResultStr, Toast.LENGTH_SHORT).show();
@@ -82,11 +82,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        etxt_ServerIP = (TextView)findViewById(R.id.etxt_ServerIP);
-        etxt_ServerPort = (TextView)findViewById(R.id.etxt_ServerPort);
+        etxt_ServerIP = findViewById(R.id.etxt_ServerIP);
+        etxt_ServerPort = findViewById(R.id.etxt_ServerPort);
 
-        tv_angle = (TextView)findViewById(R.id.tv_angle);
-        tv_strength = (TextView)findViewById(R.id.tv_strength);
+        tv_angle = findViewById(R.id.tv_angle);
+        tv_strength = findViewById(R.id.tv_strength);
 
         try {
             ds = new DatagramSocket();
@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        JoystickView joystick = (JoystickView) findViewById(R.id.joystickView);
+        JoystickView joystick = findViewById(R.id.joystickView);
         joystick.setEnabled(false);
         joystick.setOnMoveListener((angle, strength) -> {
             tv_angle.setText(String.valueOf(angle));
