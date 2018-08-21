@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 
 import pw.ewen.mycar.video.H264Decoder;
@@ -92,9 +93,17 @@ public class VideoActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            decoder.setDecodeFile(h264Path);
+//            decoder.setDecodeFile(h264Path);
+
             try {
-                decoder.decode(sv1);
+                Socket socket = new Socket("192.168.0.101", 7777);
+                InputStream inputStream = socket.getInputStream();
+                try {
+                    decoder.decode(inputStream, sv1);
+                } finally {
+                    inputStream.close();
+                    socket.close();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e("DecoderError", e.toString());

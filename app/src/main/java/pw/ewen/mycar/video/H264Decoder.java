@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /*
@@ -37,6 +38,7 @@ public class H264Decoder {
 
     private SurfaceView surfaceView;
 
+    //定义视频参数
     private final static String MIME_TYPE = "video/avc"; // H.264 Advanced Video
     private int videoWidth = 640;
     private int videoHeight = 480;
@@ -45,15 +47,23 @@ public class H264Decoder {
 
     //H264文件缓存区，解码器工作缓存，要能够容纳一个nalu的容量，否则解码器会出错
     private final static int PROCESS_BUFFER_SIZE = 200000;
+
     private int beginNaluPos = -1;
     //缓存区最后一个起始码的位置
     private int endNaluPos = -1;
-    private byte[] processBuffer = new byte[PROCESS_BUFFER_SIZE];
-    private Nalu currentNalu;
-    private BufferedInputStream bis;
-    private boolean readingFile = false;
 
-    private String decodeFile;
+    private byte[] processBuffer = new byte[PROCESS_BUFFER_SIZE];
+
+    private Nalu currentNalu;
+
+    //视频输入流
+    private BufferedInputStream bis;
+    //视频文件
+//    private String decodeFile;
+
+//    private boolean readingFile = false;
+
+
 
     private byte[] sps = null;
     private byte[] pps = null;
@@ -64,9 +74,9 @@ public class H264Decoder {
         return currentNalu;
     }
 
-    public String getDecodeFile() {
-        return decodeFile;
-    }
+//    public String getDecodeFile() {
+//        return decodeFile;
+//    }
 
     public int getVideoWidth() {
         return videoWidth;
@@ -92,9 +102,9 @@ public class H264Decoder {
         this.fps = fps;
     }
 
-    public void setDecodeFile(String decodeFile) {
-        this.decodeFile = decodeFile;
-    }
+//    public void setDecodeFile(String decodeFile) {
+//        this.decodeFile = decodeFile;
+//    }
 
     public void initDecoder(byte[] sps, byte[] pps) throws IOException {
 
@@ -115,21 +125,23 @@ public class H264Decoder {
         mCodec.start();
     }
 
-    private void readFile() throws FileNotFoundException {
-        File file = new File(this.decodeFile);
-        bis = new BufferedInputStream(new FileInputStream(file), PROCESS_BUFFER_SIZE);
-        try {
-            readingFile =  bis.available() > 0;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void readFile() throws FileNotFoundException {
+//        File file = new File(this.decodeFile);
+//        bis = new BufferedInputStream(new FileInputStream(file), PROCESS_BUFFER_SIZE);
+//        try {
+//            readingFile =  bis.available() > 0;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    private void closeFile() throws IOException {
+//        bis.close();
+//    }
 
-    private void closeFile() throws IOException {
-        bis.close();
-    }
 
-    private int fillBuffer(BufferedInputStream bis) throws Exception {
+
+    private int fillBuffer(InputStream bis) throws Exception {
         Log.i("Decoder", "开始填充缓冲区");
 
         //lastProcessPoint以后的数据移到缓冲区最前端
@@ -281,18 +293,18 @@ public class H264Decoder {
     }
 
 
-    public  void decode(SurfaceView surfaceView) throws Exception {
-        try {
+    public  void decode(InputStream iStream, SurfaceView surfaceView) throws Exception {
+//        try {
             this.surfaceView = surfaceView;
 
-            if(!this.readingFile) {
-                Log.i("Decoder", "开始读取文件");
-                readFile();
-                this.readingFile = true;
-            }
+//            if(!this.readingFile) {
+//                Log.i("Decoder", "开始读取文件");
+//                readFile();
+//                this.readingFile = true;
+//            }
 
             //填充缓冲区
-            while(fillBuffer(this.bis) != -1) {
+            while(fillBuffer(iStream) != -1) {
 
                 int i = 0;
                 while(i < processBuffer.length) {
@@ -331,13 +343,13 @@ public class H264Decoder {
             }
             this.mCodec.stop();
             this.mCodec.release();
-        } finally {
-            if(this.readingFile) {
-                closeFile();
-                this.readingFile = false;
-                Log.i("Decoder", "文件读取完毕");
-            }
-        }
+//        } finally {
+//            if(this.readingFile) {
+//                closeFile();
+//                this.readingFile = false;
+//                Log.i("Decoder", "文件读取完毕");
+//            }
+//        }
 
     }
 

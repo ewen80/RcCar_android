@@ -14,6 +14,10 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 
 import io.github.controlwear.virtual.joystick.android.JoystickView;
+import pw.ewen.mycar.command.CarCommand;
+import pw.ewen.mycar.command.CarCommandExecutor;
+import pw.ewen.mycar.command.CarCommandTypeEnum;
+import pw.ewen.mycar.command.CarMoveParam;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private CarCommand carCommand = new CarCommand();
     private CarMoveParam carMoveParam = new CarMoveParam();
 
-    CarCommandExecutor  carCommandExecutor = CarCommandExecutor.getInstance();
+    CarCommandExecutor carCommandExecutor = CarCommandExecutor.getInstance();
 
 
     private class ConfirmServerTask extends AsyncTask<Void, Void, Boolean> {
@@ -138,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
                 if((strength == 0 && lastSpeed != 0) || strength != 0) {
                     lastAngle = angle;
                     lastSpeed = strength;
-                    addCommand(angle, strength);
+                    addCarMoveCommand(angle, strength);
                 }
             }
         });
@@ -162,9 +166,10 @@ public class MainActivity extends AppCompatActivity {
 
 
     //写入命令
-    private void addCommand(int angle, int strength) {
-        this.carMoveParam.setAngle(angle);
-        this.carMoveParam.setSpeed(strength);
+    //参数:  angle 摇杆角度
+    //      strength 摇杆力度
+    private void addCarMoveCommand(int angle, int strength) {
+        this.carMoveParam.transformJoystickParam(strength, angle);
         carCommand.setMoveParam(carMoveParam);
         carCommandExecutor.addCommand(carCommand);
     }
