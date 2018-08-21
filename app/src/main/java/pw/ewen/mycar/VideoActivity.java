@@ -33,7 +33,7 @@ public class VideoActivity extends AppCompatActivity {
 
     private H264Decoder decoder;
 
-    Thread readFileThread;
+    Thread playStreamThread;
 
 
 
@@ -83,20 +83,20 @@ public class VideoActivity extends AppCompatActivity {
     private void play() {
         decoder = H264Decoder.getInstance();
 
-        readFileThread = new Thread(readFile);
-        readFileThread.start();
+        playStreamThread = new Thread(playStream);
+        playStreamThread.start();
     }
 
 
 
-    Runnable readFile = new Runnable() {
+    Runnable playStream = new Runnable() {
 
         @Override
         public void run() {
 //            decoder.setDecodeFile(h264Path);
 
             try {
-                Socket socket = new Socket("192.168.0.101", 7777);
+                Socket socket = new Socket("192.168.3.24", 7777);
                 InputStream inputStream = socket.getInputStream();
                 try {
                     decoder.decode(inputStream, sv1);

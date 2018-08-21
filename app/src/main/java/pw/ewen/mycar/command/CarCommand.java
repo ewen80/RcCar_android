@@ -113,11 +113,11 @@ public class CarCommand {
     private String getCamCommandStr(){
         switch (this.cameraCommand){
             case On:
-                return "V|1";
+                return "V1|";
             case Off:
-                return "V|0";
+                return "V0|";
             case Restart:
-                return "V|2";
+                return "V2|";
             default:
                 return "";
         }

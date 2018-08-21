@@ -5,6 +5,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,6 +15,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 
 import io.github.controlwear.virtual.joystick.android.JoystickView;
+import pw.ewen.mycar.command.CarCameraCommandEnum;
 import pw.ewen.mycar.command.CarCommand;
 import pw.ewen.mycar.command.CarCommandExecutor;
 import pw.ewen.mycar.command.CarCommandTypeEnum;
@@ -38,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tv_angle;
     private TextView tv_strength;
+
+    private Button btn_video;
 
     private CarCommand carCommand = new CarCommand();
     private CarMoveParam carMoveParam = new CarMoveParam();
@@ -76,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Boolean result) {
             JoystickView joystick = findViewById(R.id.joystickView);
             joystick.setEnabled(result);
+            btn_video.setEnabled(result);
+
             String testResultStr = result ? "服务器存在" : "服务器不存在";
             Toast.makeText(MainActivity.this, testResultStr, Toast.LENGTH_SHORT).show();
         }
@@ -131,6 +137,10 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        btn_video = findViewById(R.id.btn_video);
+        btn_video.setEnabled(false);
+
+
         JoystickView joystick = findViewById(R.id.joystickView);
         joystick.setEnabled(false);
         joystick.setOnMoveListener((angle, strength) -> {
@@ -159,6 +169,10 @@ public class MainActivity extends AppCompatActivity {
 
     //播放视频点击按钮
     public void playVideoButton_OnClick(View view) {
+        carCommand.setCommandType(CarCommandTypeEnum.Camera);
+        carCommand.setCameraCommand(CarCameraCommandEnum.On);
+        carCommandExecutor.addCommand(carCommand);
+
         Intent playVideoIntent = new Intent(this, VideoActivity.class);
         startActivity(playVideoIntent);
     }
@@ -170,6 +184,8 @@ public class MainActivity extends AppCompatActivity {
     //      strength 摇杆力度
     private void addCarMoveCommand(int angle, int strength) {
         this.carMoveParam.transformJoystickParam(strength, angle);
+
+        carCommand.setCommandType(CarCommandTypeEnum.Drive);
         carCommand.setMoveParam(carMoveParam);
         carCommandExecutor.addCommand(carCommand);
     }

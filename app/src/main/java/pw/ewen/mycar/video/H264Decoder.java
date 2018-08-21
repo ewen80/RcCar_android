@@ -316,9 +316,11 @@ public class H264Decoder {
                         NaluType naluType = nalu.getType();
                         if(sps == null && naluType.equals(NaluType.SPS)) {
                             sps = nalu.getNoStartCodeContent();
+                            Log.i("Decoder", "找到sps");
                         }
                         if(pps == null && naluType.equals(NaluType.PPS)) {
                             pps = nalu.getNoStartCodeContent();
+                            Log.i("Decoder", "找到pps");
                         }
 
                         if(sps != null && pps != null) {
