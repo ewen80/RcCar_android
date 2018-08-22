@@ -46,13 +46,14 @@ public class H264Decoder {
 
 
     //H264文件缓存区，解码器工作缓存，要能够容纳一个nalu的容量，否则解码器会出错
-    private final static int PROCESS_BUFFER_SIZE = 200000;
+    public final static int PROCESS_BUFFER_SIZE = 200000;
+
+    //工作缓存
+    private byte[] processBuffer = new byte[PROCESS_BUFFER_SIZE];
 
     private int beginNaluPos = -1;
     //缓存区最后一个起始码的位置
     private int endNaluPos = -1;
-
-    private byte[] processBuffer = new byte[PROCESS_BUFFER_SIZE];
 
     private Nalu currentNalu;
 
@@ -140,8 +141,9 @@ public class H264Decoder {
 //    }
 
 
-
-    private int fillBuffer(InputStream bis) throws Exception {
+    // 填充缓冲区
+    // 返回 false 表示流中已经没有数据
+    private boolean fillBuffer(InputStream bis) throws Exception {
         Log.i("Decoder", "开始填充缓冲区");
 
         //lastProcessPoint以后的数据移到缓冲区最前端
@@ -150,23 +152,41 @@ public class H264Decoder {
             for(int i = 0; i < PROCESS_BUFFER_SIZE - endNaluPos - 1; i++) {
                 processBuffer[i] = processBuffer[endNaluPos + i + 1];
             }
-            return bis.read(processBuffer, endNaluPos + 1, PROCESS_BUFFER_SIZE - endNaluPos - 1);
+//            return bis.read(processBuffer, endNaluPos + 1, PROCESS_BUFFER_SIZE - endNaluPos - 1);
+            return writeFullBuffer(processBuffer, bis, endNaluPos + 1, PROCESS_BUFFER_SIZE - endNaluPos - 1);
         } else if(beginNaluPos > 0) {
             //缓冲区内只找到nalu开始代码,没有找到结束代码,将开始代码之后的全部前移,后面补充
             int j = 0;
             for(int i = beginNaluPos; i < processBuffer.length; i++) {
                 processBuffer[j++] = processBuffer[i];
             }
-            return bis.read(processBuffer, PROCESS_BUFFER_SIZE - beginNaluPos, beginNaluPos);
+//            return bis.read(processBuffer, PROCESS_BUFFER_SIZE - beginNaluPos, beginNaluPos);
+            return writeFullBuffer(processBuffer, bis, PROCESS_BUFFER_SIZE - beginNaluPos, beginNaluPos);
         } else if(beginNaluPos == -1 && endNaluPos == -1) {
             //整体填充缓冲区
-            return bis.read(processBuffer, 0, PROCESS_BUFFER_SIZE );
+//            return bis.read(processBuffer, 0, PROCESS_BUFFER_SIZE );
+            return writeFullBuffer(processBuffer, bis, 0, PROCESS_BUFFER_SIZE);
         } else if(beginNaluPos == 0 && endNaluPos == -1) {
             throw new Exception("缓冲区内无法容纳完整nalu,请尝试扩大缓冲区.");
         } else {
-            return -1;
+            return false;
         }
 
+    }
+
+    //保证足量数据存入缓存中
+    // 返回false 表示流已经全部读完
+    private boolean writeFullBuffer(byte[] buffer, InputStream inputStream, int offset, int readCount) throws IOException {
+        int readedCount = 0;    //已经读取的字节数
+        while(readedCount < readCount){
+            int returnedByte =  inputStream.read(buffer, offset + readedCount, readCount - readedCount);
+            if(returnedByte > 0){
+                readedCount += returnedByte;
+            } else {
+                return false;
+            }
+        }
+        return true;
     }
 
 
@@ -304,7 +324,7 @@ public class H264Decoder {
 //            }
 
             //填充缓冲区
-            while(fillBuffer(iStream) != -1) {
+            while(fillBuffer(iStream)) {
 
                 int i = 0;
                 while(i < processBuffer.length) {
@@ -325,6 +345,7 @@ public class H264Decoder {
 
                         if(sps != null && pps != null) {
                             if(!codecIsInitialed) {
+                                Log.i("Decoder", "初始化解码器");
                                 initDecoder(sps, pps);
                                 codecIsInitialed = true;
                             }

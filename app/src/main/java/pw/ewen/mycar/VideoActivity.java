@@ -1,9 +1,11 @@
 package pw.ewen.mycar;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +17,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,11 +30,13 @@ import pw.ewen.mycar.video.H264Decoder;
 
 public class VideoActivity extends AppCompatActivity {
 
-    private String h264Path = "/mnt/sdcard/video_ih.h264";
+    private String h264Path = Environment.getExternalStorageDirectory() + "/video_ih.h264";
 
     private SurfaceView sv1;
 
     private H264Decoder decoder;
+
+    private String mediaType;
 
     Thread playStreamThread;
 
@@ -41,6 +46,10 @@ public class VideoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video);
+
+        //获取播放类型
+        Intent intent = getIntent();
+        mediaType = intent.getStringExtra("mediaType");
 
         sv1 = findViewById(R.id.sv1);
         sv1.getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -69,6 +78,16 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
             case 1:
@@ -93,16 +112,28 @@ public class VideoActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-//            decoder.setDecodeFile(h264Path);
-
+            InputStream inputStream;
             try {
-                Socket socket = new Socket("192.168.3.24", 7777);
-                InputStream inputStream = socket.getInputStream();
-                try {
-                    decoder.decode(inputStream, sv1);
-                } finally {
-                    inputStream.close();
-                    socket.close();
+                switch (mediaType){
+                    case "tcp":
+                        Socket socket = new Socket("192.168.0.101", 7777);
+                        inputStream = socket.getInputStream();
+
+                        try {
+                            decoder.decode(inputStream, sv1);
+                        } finally {
+                            inputStream.close();
+                            socket.close();
+                        }
+                        break;
+                    case "file":
+                        inputStream = new FileInputStream(h264Path);
+                        try{
+                            decoder.decode(inputStream, sv1);
+                        } finally {
+                            inputStream.close();
+                        }
+
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -110,4 +141,9 @@ public class VideoActivity extends AppCompatActivity {
             }
         }
     };
+
+    //销毁解码线程
+    private void closePlayStream(){
+
+    }
 }

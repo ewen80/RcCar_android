@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         btn_video = findViewById(R.id.btn_video);
-        btn_video.setEnabled(false);
+//        btn_video.setEnabled(false);
 
 
         JoystickView joystick = findViewById(R.id.joystickView);
@@ -169,11 +169,19 @@ public class MainActivity extends AppCompatActivity {
 
     //播放视频点击按钮
     public void playVideoButton_OnClick(View view) {
-        carCommand.setCommandType(CarCommandTypeEnum.Camera);
-        carCommand.setCameraCommand(CarCameraCommandEnum.On);
-        carCommandExecutor.addCommand(carCommand);
+//        carCommand.setCommandType(CarCommandTypeEnum.Camera);
+//        carCommand.setCameraCommand(CarCameraCommandEnum.On);
+//        carCommandExecutor.addCommand(carCommand);
 
         Intent playVideoIntent = new Intent(this, VideoActivity.class);
+        playVideoIntent.putExtra("mediaType", "tcp");
+        startActivity(playVideoIntent);
+    }
+
+    //播放视频文件点击按钮
+    public void playFileVideoButton_OnClick(View view){
+        Intent playVideoIntent = new Intent(this, VideoActivity.class);
+        playVideoIntent.putExtra("mediaType","file");
         startActivity(playVideoIntent);
     }
 
