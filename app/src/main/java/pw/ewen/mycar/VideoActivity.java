@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
@@ -116,7 +118,7 @@ public class VideoActivity extends AppCompatActivity {
             try {
                 switch (mediaType){
                     case "tcp":
-                        Socket socket = new Socket("192.168.0.101", 7777);
+                        Socket socket = new Socket("192.168.3.24", 7777);
                         inputStream = socket.getInputStream();
 
                         try {
@@ -133,6 +135,11 @@ public class VideoActivity extends AppCompatActivity {
                         } finally {
                             inputStream.close();
                         }
+                        break;
+                    case "udp":
+                        InetAddress address = InetAddress.getLocalHost();
+                        DatagramSocket udpSocket = new DatagramSocket(8888);
+
 
                 }
             } catch (Exception e) {

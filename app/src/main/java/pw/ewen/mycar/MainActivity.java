@@ -185,6 +185,13 @@ public class MainActivity extends AppCompatActivity {
         startActivity(playVideoIntent);
     }
 
+    //播放视频UDP按钮点击事件
+    public void playUDPVideoButton_OnClick(View view){
+        Intent playVideoIntent = new Intent(this, VideoActivity.class);
+        playVideoIntent.putExtra("mediaType", "udp");
+        startActivity(playVideoIntent);
+    }
+
 
 
     //写入命令
