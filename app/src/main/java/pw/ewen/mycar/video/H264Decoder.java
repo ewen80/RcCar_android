@@ -317,12 +317,6 @@ public class H264Decoder {
 //        try {
             this.surfaceView = surfaceView;
 
-//            if(!this.readingFile) {
-//                Log.i("Decoder", "开始读取文件");
-//                readFile();
-//                this.readingFile = true;
-//            }
-
             //填充缓冲区
             while(fillBuffer(iStream)) {
 
