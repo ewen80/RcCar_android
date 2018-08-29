@@ -25,7 +25,7 @@ import pw.ewen.mycar.video._H264Decoder;
 
 public class VideoActivity extends AppCompatActivity {
 
-    private String h264Path = Environment.getExternalStorageDirectory() + "/video_ih.h264";
+    private String h264Path = Environment.getExternalStorageDirectory() + "/720pq.h264";
 
     private SurfaceView sv1;
 

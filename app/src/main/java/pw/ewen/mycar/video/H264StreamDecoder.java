@@ -174,14 +174,14 @@ public class H264StreamDecoder implements H264StreamDecodeInterface {
     public void decode(InputStream iStream, SurfaceView surfaceView) throws Exception {
 
         //新开一个线程用于解码
-//        Thread decodeThread = new Thread(() -> {
-//            try {
-//                naluDecoder.decode(surfaceView);
-//            } catch (IOException e) {
-//                Log.e("Decoder", "解码过程出现异常："+e.toString());
-//            }
-//        });
-//        decodeThread.start();
+        Thread decodeThread = new Thread(() -> {
+            try {
+                naluDecoder.decode(surfaceView);
+            } catch (IOException e) {
+                Log.e("Decoder", "解码过程出现异常："+e.toString());
+            }
+        });
+        decodeThread.start();
 
         //填充缓冲区
         while(fillBuffer(iStream)) {
@@ -192,7 +192,7 @@ public class H264StreamDecoder implements H264StreamDecodeInterface {
                 if(nalu != null) {
                     //找到一个nalu,推入nalu序列准备解码
                     naluDecoder.feed(nalu);
-                    naluDecoder.decode(surfaceView);
+//                    naluDecoder.decode(surfaceView);
 
                     if(this.endNaluPos != processBuffer.length - 1) {
                         i = this.endNaluPos + 1;
