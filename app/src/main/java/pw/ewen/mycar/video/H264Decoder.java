@@ -364,16 +364,11 @@ public class H264Decoder {
                     }
                 }
             }
-            this.mCodec.stop();
-            this.mCodec.release();
-//        } finally {
-//            if(this.readingFile) {
-//                closeFile();
-//                this.readingFile = false;
-//                Log.i("Decoder", "文件读取完毕");
-//            }
-//        }
 
+            if(this.mCodec != null) {
+                this.mCodec.stop();
+                this.mCodec.release();
+            }
     }
 
 }
