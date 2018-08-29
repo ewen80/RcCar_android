@@ -104,7 +104,7 @@ public class H264NauDecoder {
     //解码
     public void decode(SurfaceView surfaceView) throws IOException {
 
-        while(!stopDecode){
+//        while(!stopDecode){
             if(nalus.size() > 0){
                 Nalu nalu = nalus.poll();
                 if(nalu != null) {
@@ -129,14 +129,14 @@ public class H264NauDecoder {
                         naluDecode(nalu);
                     }
                 }
-            } else {
-                //Nalu序列如果为空等待50毫秒继续检测
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+//            } else {
+//                //Nalu序列如果为空等待50毫秒继续检测
+//                try {
+//                    Thread.sleep(50);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
         }
     }
 

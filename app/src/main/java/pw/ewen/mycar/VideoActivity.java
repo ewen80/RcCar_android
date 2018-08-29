@@ -142,9 +142,4 @@ public class VideoActivity extends AppCompatActivity {
             }
         }
     };
-
-    //销毁解码线程
-    private void closePlayStream(){
-
-    }
 }
