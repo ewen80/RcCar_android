@@ -3,8 +3,6 @@ package pw.ewen.mycar;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.media.MediaCodec;
-import android.media.MediaFormat;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -13,22 +11,17 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.Button;
 import android.widget.Toast;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
-import pw.ewen.mycar.video.H264Decoder;
+import pw.ewen.mycar.video.H264StreamDecodeInterface;
+import pw.ewen.mycar.video.H264StreamDecoder;
+import pw.ewen.mycar.video._H264Decoder;
 
 public class VideoActivity extends AppCompatActivity {
 
@@ -36,7 +29,7 @@ public class VideoActivity extends AppCompatActivity {
 
     private SurfaceView sv1;
 
-    private H264Decoder decoder;
+    private H264StreamDecodeInterface decoder;
 
     private String mediaType;
 
@@ -102,7 +95,6 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void play() {
-        decoder = H264Decoder.getInstance();
 
         playStreamThread = new Thread(playStream);
         playStreamThread.start();
@@ -118,6 +110,7 @@ public class VideoActivity extends AppCompatActivity {
             try {
                 switch (mediaType){
                     case "tcp":
+                        decoder = new H264StreamDecoder();
                         Socket socket = new Socket("192.168.3.24", 7777);
                         inputStream = socket.getInputStream();
 
@@ -129,6 +122,7 @@ public class VideoActivity extends AppCompatActivity {
                         }
                         break;
                     case "file":
+                        decoder = new H264StreamDecoder();
                         inputStream = new FileInputStream(h264Path);
                         try{
                             decoder.decode(inputStream, sv1);

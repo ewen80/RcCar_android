@@ -6,9 +6,6 @@ import android.util.Log;
 import android.view.SurfaceView;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -16,16 +13,16 @@ import java.nio.ByteBuffer;
 /*
     负责解码H264裸流
  */
-public class H264Decoder {
+public class _H264Decoder {
 
     private static class LazyHolder {
-        private static final H264Decoder INSTANCE = new H264Decoder();
+        private static final _H264Decoder INSTANCE = new _H264Decoder();
     }
 
-    private H264Decoder(){
+    private _H264Decoder(){
     }
 
-    public static H264Decoder getInstance() {
+    public static _H264Decoder getInstance() {
         return LazyHolder.INSTANCE;
     }
 

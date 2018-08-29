@@ -12,7 +12,7 @@ import java.util.LinkedList;
 /***
  * 解码序列中的H264 Nalu
  */
-public class H264NaluDecoder {
+public class H264NauDecoder {
 
     private LinkedList<Nalu> nalus = new LinkedList<>();
 
@@ -129,12 +129,19 @@ public class H264NaluDecoder {
                         naluDecode(nalu);
                     }
                 }
+            } else {
+                //Nalu序列如果为空等待50毫秒继续检测
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
 
     //添加Nalu
     public void feed(Nalu nalu){
-
+        nalus.add(nalu);
     }
 }
