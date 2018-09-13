@@ -10,6 +10,21 @@ public class RtpHeader {
     private short sequence;
     private int timestamp;
 
+    public boolean isFrameEnd() {
+        return isFrameEnd;
+    }
+
+    public RtpPayloadType getPayloadType() {
+        return payloadType;
+    }
+
+    public short getSequence() {
+        return sequence;
+    }
+
+    public int getTimestamp() {
+        return timestamp;
+    }
 
     public RtpHeader(byte[] headerbytes) {
         if(headerbytes.length >= 12){
