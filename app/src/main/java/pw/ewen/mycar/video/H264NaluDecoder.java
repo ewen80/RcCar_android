@@ -12,7 +12,7 @@ import java.util.LinkedList;
 /***
  * 解码序列中的H264 Nalu
  */
-public class H264NauDecoder {
+public class H264NaluDecoder {
 
     private LinkedList<Nalu> nalus = new LinkedList<>();
 

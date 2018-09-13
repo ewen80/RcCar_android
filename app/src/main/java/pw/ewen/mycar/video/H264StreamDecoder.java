@@ -12,7 +12,7 @@ import java.io.InputStream;
  */
 public class H264StreamDecoder implements H264StreamDecodeInterface {
 
-    private H264NauDecoder naluDecoder = new H264NauDecoder();
+    private H264NaluDecoder naluDecoder = new H264NaluDecoder();
 
     //H264文件缓存区，解码器工作缓存，要能够容纳一个nalu的容量，否则解码器会出错
     public final static int PROCESS_BUFFER_SIZE = 200000;

@@ -28,7 +28,7 @@ public class NalHeader {
         return Type;
     }
 
-    public void setType(byte type) {
-        Type = type;
+    public NalHeader(byte nalHeaderByte) {
+        this.Type = (byte) (nalHeaderByte & 0x1F);
     }
 }
